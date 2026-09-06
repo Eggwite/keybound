@@ -1,0 +1,28 @@
+name: Bug report
+description: Something does not behave as documented
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include JSX, provider/compiler config, and the key combination.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Keybound, React, framework and browser versions; OS and keyboard layout.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Relevant diagnostics
+      description: Include the diagnostic code and whether it appeared in the terminal or browser console.

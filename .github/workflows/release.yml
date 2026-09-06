@@ -1,0 +1,67 @@
+name: Prepare release
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to npm (requires NPM_PUBLISH_ENABLED and environment approval)
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - id: version
+        run: node scripts/release-version.mjs
+      - run: mkdir -p artifacts && npm pack --workspace react-keybound --pack-destination artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: artifacts/*.tgz
+  draft:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: artifacts
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: gh release create "v$VERSION" artifacts/*.tgz --draft --title "Keybound v$VERSION" --notes-file CHANGELOG.md
+  publish:
+    if: inputs.publish && vars.NPM_PUBLISH_ENABLED == 'true'
+    needs: [validate, draft]
+    environment: npm-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global npm@11
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: artifacts
+      - run: npm publish artifacts/*.tgz --access public --provenance

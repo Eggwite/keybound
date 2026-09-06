@@ -1,0 +1,12 @@
+node_modules/
+dist/
+!packages/react-keybound/dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+*.tgz
+.package-check-*/
+.env*
+!.env.example
+.DS_Store

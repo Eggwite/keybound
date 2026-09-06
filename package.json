@@ -1,0 +1,60 @@
+{
+  "name": "keybound-workspace",
+  "private": true,
+  "author": {
+    "name": "Eggwite",
+    "email": "contact@eggwite.moe",
+    "url": "https://github.com/Eggwite"
+  },
+  "type": "module",
+  "packageManager": "npm@11.11.1",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "fixtures/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "build:package": "tsup --config packages/react-keybound/tsup.config.ts",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:package": "node scripts/check-package.mjs",
+    "check": "node scripts/check.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/plugin-transform-react-jsx": "^7.27.1",
+    "@babel/plugin-transform-typescript": "^7.28.0",
+    "@babel/types": "^7.28.0",
+    "@eslint/js": "^9.39.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^22.18.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.4.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.6.2",
+    "publint": "^0.3.14",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0",
+    "vite": "^7.1.0",
+    "vitest": "^3.2.4"
+  }
+}

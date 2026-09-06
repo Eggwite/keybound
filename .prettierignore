@@ -1,0 +1,7 @@
+node_modules
+dist
+.next
+out
+package-lock.json
+*.tsbuildinfo
+apps/web/next-env.d.ts

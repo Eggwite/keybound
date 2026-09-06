@@ -1,0 +1,39 @@
+[data-keybound-word] {
+  white-space: nowrap;
+  display: inline;
+}
+[data-keybound-mnemonic] {
+  text-decoration: underline;
+  display: inline;
+}
+[data-keybound-overlay-hint] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(calc(-100% - 4px));
+  padding: 1px 5px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+  border-radius: 4px;
+  background: #121212;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 9999;
+}
+[data-keybound-overlay-hint] kbd {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-keybound-overlay-hint] {
+    transition: none;
+  }
+}

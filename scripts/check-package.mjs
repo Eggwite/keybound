@@ -106,10 +106,11 @@ if (
 ) {
   throw new Error('dist/index.js must externalize React instead of bundling it');
 }
+const runtimeBudget = 8 * 1024;
 const gzipBytes = gzipSync(clientEntry).byteLength;
-if (gzipBytes > 16 * 1024)
-  throw new Error(`runtime entry is ${gzipBytes} gzip bytes; the budget is 16384`);
-console.log(`runtime entry: ${gzipBytes} gzip bytes`);
+if (gzipBytes > runtimeBudget)
+  throw new Error(`runtime entry is ${gzipBytes} gzip bytes; the budget is ${runtimeBudget}`);
+console.log(`runtime entry: ${gzipBytes} gzip bytes (budget: ${runtimeBudget} bytes)`);
 const runtime = await import(
   `${pathToFileURL(join(distDirectory, 'index.js')).href}?export-smoke=1`
 );

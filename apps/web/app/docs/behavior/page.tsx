@@ -74,11 +74,42 @@ export default function BehaviorPage() {
         <CodeBlock code={eligibilityExample} label="components/form.tsx" />
       </section>
 
+      <section className="space-y-3 pt-4">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="size-4 text-ember" />
+          <h2 className="text-[15px] font-semibold text-ink">
+            Semantic Character Matching &amp; macOS
+          </h2>
+        </div>
+        <p className="text-[13px] text-muted leading-relaxed">
+          Mnemonics are semantic character shortcuts: Keybound matches{' '}
+          <code>KeyboardEvent.key</code>, respecting the user&apos;s active keyboard layout and
+          remapping. It never infers characters from physical key positions (<code>event.code</code>
+          ) or legacy key codes.
+        </p>
+        <p className="text-[13px] text-muted leading-relaxed">
+          On macOS, the Option key acts as a glyph modifier/dead-key composer (e.g. Option+S
+          produces &ldquo;ß&rdquo;, Option+E produces a dead key). For applications targeting Mac or
+          cross-platform users, configure <code>mnemonicModifier=&quot;mod&quot;</code> on{' '}
+          <code>&lt;KeyboundProvider&gt;</code> (resolves to ⌘ on Apple, Ctrl elsewhere) so
+          mnemonics remain portable semantic characters. Note that setting{' '}
+          <code>mnemonicModifier=&quot;mod&quot;</code> preserves semantic character matching on
+          Mac, but does not make browser-reserved shortcuts automatically safe to capture.
+        </p>
+      </section>
+
       <div className="rounded-panel border border-border bg-white p-4 space-y-2">
         <span className="text-[12px] font-semibold text-charcoal uppercase tracking-wider">
           Summary of Rules
         </span>
         <ul className="space-y-1.5 text-[12.5px] text-muted">
+          <li className="flex items-center gap-2">
+            <CheckCircle2 className="size-3.5 text-grass flex-none" />
+            <span>
+              Semantic matching via <code>KeyboardEvent.key</code>; physical key codes are never
+              used.
+            </span>
+          </li>
           <li className="flex items-center gap-2">
             <CheckCircle2 className="size-3.5 text-grass flex-none" />
             <span>Deepest active scope wins collisions.</span>
@@ -89,7 +120,10 @@ export default function BehaviorPage() {
           </li>
           <li className="flex items-center gap-2">
             <CheckCircle2 className="size-3.5 text-grass flex-none" />
-            <span>Composition, IME, and repeated keys do not trigger accidental actions.</span>
+            <span>
+              Composition, dead-key, IME, AltGraph, and repeated keys do not trigger accidental
+              actions.
+            </span>
           </li>
         </ul>
       </div>

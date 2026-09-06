@@ -1,6 +1,6 @@
 # Keybound 0.1 specification
 
-Status: implementation contract. Package name: `react-keybound` (unclaimed at the initial registry check; no name reservation implied). Keybound is the product name.
+Status: implementation contract. Package name: `react-keybound`. Keybound is the product name.
 
 ## Scope
 
@@ -72,7 +72,7 @@ Framework components use small explicit adapters: export `radixSelectAction(elem
 
 ## Behavioral decisions
 
-- First unescaped `&` marks one Unicode grapheme; `&&` is literal `&`; a trailing `&` is literal. Subsequent markers are preserved literally to avoid silently deleting text. Normalize NFC for matching; render original text unchanged apart from the marker. Composed characters tested. Keyboard matching uses event.key, never a US-only physical key fallback. AltGr, composition, Dead/Process/Unidentified events are ignored. `mod` resolves to Meta on Apple, Ctrl elsewhere; explicit Ctrl remains Ctrl.
+- First unescaped `&` marks one Unicode grapheme; `&&` is literal `&`; a trailing `&` is literal. Subsequent markers are preserved literally to avoid silently deleting text. Normalize NFC for matching; render original text unchanged apart from the marker. Composed characters tested. Mnemonics are semantic character shortcuts. Keybound matches `KeyboardEvent.key`, respecting the active keyboard layout and remapping. It never infers a character from a physical key position or legacy key code. Composition, dead-key, process, unidentified, and AltGraph events do not dispatch bindings. On macOS, Option acts as a glyph modifier/dead-key composer rather than a shortcut modifier; apps targeting Mac or cross-platform mnemonics can configure `mnemonicModifier="mod"`, where `mod` resolves to Meta on Apple (`⌘`), Ctrl elsewhere (`Ctrl+`) (explicit Ctrl remains Ctrl). Note that configuring `mod` preserves semantic character matching on Mac, but does not make browser-reserved shortcuts automatically safe to capture.
 - Default underline uses `text-decoration` on a span (`data-keybound-mnemonic`), preserving accessible text and layout. Custom class/style or reveal policy overrides it. No HTML `accesskey` so the browser does not activate the same control twice.
 - Hidden eligibility checked at dispatch, not cached at registration: disconnected, hidden/hidden ancestors, display:none, visibility:hidden/collapse, inert, aria-hidden ancestors, disabled/fieldset, aria-disabled ancestors, closed details content, and empty client rects are skipped. Offscreen but laid-out elements remain keyboard accessible; overlay only displays viewport-intersecting hints. Document these practical boundaries (not full visual occlusion detection).
 - Inputs, textareas, select, contenteditable and role=textbox typing suppress shortcuts by default. Per-binding `allowInInput` opts in. User preventDefault handlers run first; ignore already-prevented events. Repeated events ignored unless enabled. Extra modifiers must match exactly, modifier-only shortcuts invalid. Only preventDefault after an eligible winning binding. Do not stop propagation.

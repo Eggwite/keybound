@@ -359,7 +359,6 @@ function ExamplesContent() {
     modalOpen,
     220,
   );
-  const [modalBlockedKey, setModalBlockedKey] = React.useState<string | null>(null);
   const [modalSaving, setModalSaving] = React.useState(false);
   const [isDisabled, setIsDisabled] = React.useState(false);
   const [isHidden, setIsHidden] = React.useState(false);
@@ -393,33 +392,6 @@ function ExamplesContent() {
     { label: 'Headless Save' },
   );
 
-  // Close modal on Escape, and detect blocked background chords
-  React.useEffect(() => {
-    if (!modalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        setModalOpen(false);
-        return;
-      }
-      if (
-        e.altKey &&
-        (e.key === 's' ||
-          e.key === 'S' ||
-          e.key === 'x' ||
-          e.key === 'X' ||
-          e.key === 'c' ||
-          e.key === 'C')
-      ) {
-        e.preventDefault();
-        setModalBlockedKey(`Alt+${e.key.toUpperCase()}`);
-        setTimeout(() => setModalBlockedKey(null), 1600);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [modalOpen]);
-
   return (
     <div className="space-y-12">
       <div className="space-y-2 border-b border-stone pb-6">
@@ -442,26 +414,22 @@ function ExamplesContent() {
 
         <div className="p-4 rounded-card bg-white border border-border shadow-lift space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => fire('save', 'Saved with Alt+S')}
-              className="btn btn--orange btn--sm flex items-center gap-1.5"
-            >
-              &Save
-            </button>
+            <Mnemonic text="&Save" action={() => fire('save', 'Saved with Alt+S')}>
+              <button className="btn btn--orange btn--sm flex items-center gap-1.5">Save</button>
+            </Mnemonic>
 
-            <button
-              onClick={() => fire('export', 'Exported with Alt+X')}
-              className="btn btn--quiet btn--sm flex items-center gap-1.5"
-            >
-              E&xport
-            </button>
+            <Mnemonic text="E&xport" action={() => fire('export', 'Exported with Alt+X')}>
+              <button className="btn btn--quiet btn--sm flex items-center gap-1.5">Export</button>
+            </Mnemonic>
 
-            <button
-              onClick={() => fire('close', 'Saved & Closed with Alt+C')}
-              className="btn btn--quiet btn--sm flex items-center gap-1.5"
+            <Mnemonic
+              text="Save && &Close"
+              action={() => fire('close', 'Saved & Closed with Alt+C')}
             >
-              Save && &Close
-            </button>
+              <button className="btn btn--quiet btn--sm flex items-center gap-1.5">
+                Save && Close
+              </button>
+            </Mnemonic>
           </div>
 
           <div className="flex items-center gap-3 min-h-[22px]">
@@ -727,17 +695,11 @@ function ExamplesContent() {
                       main page) are completely suppressed by the active modal scope.
                     </p>
 
-                    {modalBlockedKey ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-ember bg-sand px-2 py-1.5 rounded border border-ember/30 animate-pulse">
-                        <Zap className="size-3.5 shrink-0" />
-                        <span>{modalBlockedKey} suppressed by active scope!</span>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-muted font-mono">
-                        Try pressing <kbd className="kbd-badge text-[9px]">Alt+S</kbd> or{' '}
-                        <kbd className="kbd-badge text-[9px]">Alt+X</kbd> to test suppression.
-                      </p>
-                    )}
+                    <p className="text-[11px] text-muted font-mono">
+                      Background shortcuts (<kbd className="kbd-badge text-[9px]">Alt+S</kbd>,{' '}
+                      <kbd className="kbd-badge text-[9px]">Alt+X</kbd>) are blocked while this
+                      scope is active.
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-stone">

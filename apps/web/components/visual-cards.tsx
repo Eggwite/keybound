@@ -7,7 +7,6 @@ import {
   Copy,
   CheckCircle2,
   Shield,
-  Zap,
   Loader2,
   FileText,
   Cloud,
@@ -125,28 +124,7 @@ function CardsInner() {
     modalOpen,
     220,
   );
-  const [blockedKey, setBlockedKey] = React.useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
-
-  React.useEffect(() => {
-    if (!modalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        setModalOpen(false);
-        return;
-      }
-      // Demonstrate live modal keyboard isolation:
-      // Background shortcuts (Alt+X, Alt+A) are suppressed by the scope
-      if (e.altKey && (e.key === 'x' || e.key === 'X' || e.key === 'a' || e.key === 'A')) {
-        e.preventDefault();
-        setBlockedKey(`Alt+${e.key.toUpperCase()}`);
-        setTimeout(() => setBlockedKey(null), 1600);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [modalOpen]);
 
   const handleConfirmModal = () => {
     setConfirmStatus('saving');
@@ -414,17 +392,11 @@ function CardsInner() {
                     </div>
 
                     <div className="py-1">
-                      {blockedKey ? (
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-ember bg-sand px-1.5 py-1 rounded border border-ember/30 animate-pulse">
-                          <Zap className="size-3 shrink-0" />
-                          <span>{blockedKey} suppressed by scope!</span>
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-muted leading-tight">
-                          Try pressing <kbd className="kbd-badge text-[8.5px]">Alt+X</kbd> or{' '}
-                          <kbd className="kbd-badge text-[8.5px]">Alt+A</kbd>
-                        </p>
-                      )}
+                      <p className="text-[10px] text-muted leading-tight">
+                        Background shortcuts (<kbd className="kbd-badge text-[8.5px]">Alt+X</kbd>,{' '}
+                        <kbd className="kbd-badge text-[8.5px]">Alt+A</kbd>) are blocked by the
+                        modal scope.
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-stone">

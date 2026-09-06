@@ -56,6 +56,27 @@ describe('runtime dispatch', () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 
+  it('strictly adheres to semantic matching and does not dispatch layout-specific glyphs or dead keys', () => {
+    const save = vi.fn();
+    const customAction = vi.fn();
+    render(
+      <KeyboundProvider>
+        <Mnemonic text="&Save">
+          <button onClick={save}>Save</button>
+        </Mnemonic>
+        <Hotkey keys="alt+s" action={customAction}>
+          <button>Custom</button>
+        </Hotkey>
+      </KeyboundProvider>,
+    );
+    // On macOS, Option+S produces '\u00df' with code 'KeyS'. Semantic matching must reject this.
+    expect(keydown({ key: '\u00df', code: 'KeyS', altKey: true })).toBe(true);
+    // Dead key accent prefix must also be rejected
+    expect(keydown({ key: 'Dead', code: 'KeyS', altKey: true })).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+    expect(customAction).not.toHaveBeenCalled();
+  });
+
   it('does not consume hidden, disabled, closed-details, editable or composing bindings', () => {
     const run = vi.fn();
     const Command = () => {

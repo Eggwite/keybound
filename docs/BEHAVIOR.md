@@ -8,6 +8,8 @@ A target is skipped when it is disconnected, hidden through itself or an ancesto
 
 Normal bindings do not fire while typing in inputs, textareas, selects, contenteditable regions, or `role="textbox"`. Set `allowInInput: true` for deliberate editor shortcuts. Composition, AltGr, unknown/dead keys, unmatched extra modifiers, repeats, and already-prevented events are ignored by default. `repeat: true` opts one binding into repeats.
 
+Keybound matches shortcuts semantically against `KeyboardEvent.key`, strictly following the user's active keyboard layout and remapping. It never uses physical key positions (`event.code`) or legacy key codes (`keyCode`). On macOS, the Option key acts as a glyph modifier/dead-key composer (e.g. `Option+S` produces alternative glyphs like `ß`, `Option+E` produces `Dead`). For applications targeting macOS or cross-platform mnemonics, set `mnemonicModifier="mod"` on `<KeyboundProvider>` (`⌘` on Apple, `Ctrl` elsewhere) so mnemonics remain accessible semantic characters. Note that setting `mnemonicModifier="mod"` preserves semantic character matching on Mac, but does not make browser-reserved shortcuts automatically safe to capture.
+
 Keybound calls `preventDefault()` only after finding a winner. It never stops propagation.
 
 ## Activation

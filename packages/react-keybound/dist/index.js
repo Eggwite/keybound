@@ -116,9 +116,15 @@ function isShortcutKey(value) {
 function isApplePlatform() {
   if (typeof navigator === "undefined") return false;
   const browser = navigator;
-  return /mac|iphone|ipad|ipod/i.test(
-    browser.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent
-  );
+  const platform = browser.userAgentData?.platform ?? navigator.platform ?? "";
+  const userAgent = navigator.userAgent ?? "";
+  return /mac|iphone|ipad|ipod/i.test(`${platform} ${userAgent}`);
+}
+function resolveMnemonicModifier(setting = "auto", apple = isApplePlatform()) {
+  if (setting === "auto") return apple ? "mod" : "alt";
+  if (typeof setting === "string") return setting;
+  if (apple) return setting.mac ?? "mod";
+  return setting.windows ?? setting.linux ?? setting.default ?? "alt";
 }
 function matchesShortcut(shortcut, event, apple = isApplePlatform()) {
   if (event.isComposing || ["Dead", "Process", "Unidentified"].includes(event.key)) return false;
@@ -131,12 +137,14 @@ function matchesShortcutModifiers(shortcut, event, apple = isApplePlatform()) {
   return event.ctrlKey === expectedCtrl && event.altKey === shortcut.alt && event.shiftKey === shortcut.shift && event.metaKey === expectedMeta;
 }
 function formatShortcut(shortcut, apple = isApplePlatform()) {
+  const item = typeof shortcut === "string" ? parseShortcut(shortcut) : shortcut;
+  if (!item) return typeof shortcut === "string" ? shortcut : "";
   const parts = [];
-  if (shortcut.ctrl || shortcut.mod && !apple) parts.push("Ctrl");
-  if (shortcut.alt) parts.push("Alt");
-  if (shortcut.shift) parts.push("Shift");
-  if (shortcut.meta || shortcut.mod && apple) parts.push(apple ? "\u2318" : "Meta");
-  parts.push(shortcut.key.length === 1 ? shortcut.key.toUpperCase() : displayKey(shortcut.key));
+  if (item.ctrl || item.mod && !apple) parts.push(apple ? "\u2303" : "Ctrl");
+  if (item.alt) parts.push(apple ? "\u2325" : "Alt");
+  if (item.shift) parts.push(apple ? "\u21E7" : "Shift");
+  if (item.meta || item.mod && apple) parts.push(apple ? "\u2318" : "Meta");
+  parts.push(item.key.length === 1 ? item.key.toUpperCase() : displayKey(item.key));
   return parts.join(apple ? "" : "+");
 }
 function formatAriaShortcut(shortcut, apple = false) {
@@ -145,7 +153,7 @@ function formatAriaShortcut(shortcut, apple = false) {
   if (shortcut.alt) parts.push("Alt");
   if (shortcut.shift) parts.push("Shift");
   if (shortcut.meta || shortcut.mod && apple) parts.push("Meta");
-  parts.push(ariaKey(shortcut.key));
+  parts.push(displayKey(shortcut.key));
   return parts.join("+");
 }
 function displayKey(key) {
@@ -168,10 +176,6 @@ function displayKey(key) {
     insert: "Insert"
   };
   return names[key] ?? key.toUpperCase();
-}
-function ariaKey(key) {
-  if (key.length === 1) return key.toUpperCase();
-  return displayKey(key);
 }
 
 // packages/react-keybound/src/registry.ts
@@ -416,15 +420,25 @@ var KeyboundRegistry = class {
     return true;
   }
   warn(binding, code, message) {
-    const setting = binding.options.warnings ?? this.config.warnings;
-    const viteDevelopment = import.meta.env?.DEV;
-    const development = typeof process !== "undefined" && process.env.NODE_ENV !== "production" || viteDevelopment === true;
-    const allowed = setting === true || typeof setting === "object" && setting[code] === true || setting === void 0 && development;
-    if (!allowed) return;
-    const key = `${code}:${binding.options.label ?? ""}:${binding.shortcut?.source ?? binding.mnemonicKey ?? ""}`;
-    if (this.warned.has(key)) return;
-    this.warned.add(key);
-    const warning = { code, message, keys: binding.shortcut?.source, label: binding.options.label };
+    this.emitWarning(
+      code,
+      message,
+      binding.options.warnings ?? this.config.warnings,
+      binding.shortcut?.source,
+      binding.options.label,
+      `${code}:${binding.options.label ?? ""}:${binding.shortcut?.source ?? binding.mnemonicKey ?? ""}`
+    );
+  }
+  warnGlobal(code, message) {
+    this.emitWarning(code, message, this.config.warnings, void 0, void 0, code);
+  }
+  emitWarning(code, message, setting, keys, label, dedupeKey = code) {
+    const viteDev = import.meta.env?.DEV;
+    const dev = typeof process !== "undefined" && process.env.NODE_ENV !== "production" || viteDev === true;
+    const allowed = setting === true || typeof setting === "object" && setting[code] === true || setting === void 0 && dev;
+    if (!allowed || this.warned.has(dedupeKey)) return;
+    this.warned.add(dedupeKey);
+    const warning = { code, message, keys, label };
     if (this.config.onWarning) this.config.onWarning(warning);
     else if (typeof console !== "undefined") console.warn(`[keybound:${code}] ${message}`);
   }
@@ -457,55 +471,73 @@ function useKeyboundScope() {
 function KeyboundProvider({
   children,
   enabled = true,
-  mnemonicModifier = "alt",
+  mnemonicModifier = "auto",
   reveal = "always",
   warnings,
   onWarning,
   collision = "last"
 }) {
+  const [apple, setApple] = React.useState(false);
+  React.useEffect(() => setApple(isApplePlatform()), []);
+  const resolvedModifier = React.useMemo(
+    () => resolveMnemonicModifier(mnemonicModifier, apple),
+    [mnemonicModifier, apple]
+  );
   const registryRef = React.useRef(null);
   if (!registryRef.current)
     registryRef.current = new KeyboundRegistry({
       enabled,
-      mnemonicModifier,
+      mnemonicModifier: resolvedModifier,
       collision,
       warnings,
       onWarning
     });
   const registry = registryRef.current;
   const modifierShortcut = React.useMemo(
-    () => parseShortcut(`${mnemonicModifier}+x`),
-    [mnemonicModifier]
+    () => parseShortcut(`${resolvedModifier}+x`),
+    [resolvedModifier]
   );
   React.useEffect(
-    () => registry.updateConfig({ enabled, mnemonicModifier, collision, warnings, onWarning }),
-    [registry, enabled, mnemonicModifier, collision, warnings, onWarning]
+    () => registry.updateConfig({
+      enabled,
+      mnemonicModifier: resolvedModifier,
+      collision,
+      warnings,
+      onWarning
+    }),
+    [registry, enabled, resolvedModifier, collision, warnings, onWarning]
   );
-  const [modifierDown, setModifierDown] = React.useState(false);
-  const [apple, setApple] = React.useState(false);
-  React.useEffect(() => setApple(isApplePlatform()), []);
-  React.useEffect(() => setModifierDown(false), [mnemonicModifier]);
   React.useEffect(() => {
-    const keydown = (event) => {
-      if (modifierShortcut) setModifierDown(matchesShortcutModifiers(modifierShortcut, event));
-      registry.dispatch(event);
+    if (apple && resolvedModifier === "alt") {
+      registry.warnGlobal(
+        "mac-alt-mnemonic",
+        "Option on macOS/iPadOS produces glyphs/accents. Use 'auto', 'mod', or 'ctrl'."
+      );
+    }
+  }, [apple, resolvedModifier, registry]);
+  const [modifierDown, setModifierDown] = React.useState(false);
+  React.useEffect(() => {
+    const update = (event) => {
+      if (modifierShortcut)
+        setModifierDown(matchesShortcutModifiers(modifierShortcut, event, apple));
     };
-    const keyup = (event) => {
-      if (modifierShortcut) setModifierDown(matchesShortcutModifiers(modifierShortcut, event));
+    const keydown = (event) => {
+      update(event);
+      registry.dispatch(event);
     };
     const blur = () => setModifierDown(false);
     document.addEventListener("keydown", keydown);
-    document.addEventListener("keyup", keyup);
+    document.addEventListener("keyup", update);
     window.addEventListener("blur", blur);
     return () => {
       document.removeEventListener("keydown", keydown);
-      document.removeEventListener("keyup", keyup);
+      document.removeEventListener("keyup", update);
       window.removeEventListener("blur", blur);
     };
-  }, [registry, modifierShortcut]);
+  }, [registry, modifierShortcut, apple]);
   const value = React.useMemo(
-    () => ({ registry, enabled, mnemonicModifier, reveal, modifierDown, apple }),
-    [registry, enabled, mnemonicModifier, reveal, modifierDown, apple]
+    () => ({ registry, enabled, mnemonicModifier: resolvedModifier, reveal, modifierDown, apple }),
+    [registry, enabled, resolvedModifier, reveal, modifierDown, apple]
   );
   return /* @__PURE__ */ jsx(KeyboundContext.Provider, { value, children });
 }
@@ -755,17 +787,7 @@ function KeyboundOverlay({
           {
             "data-keybound-overlay-hint": "",
             style: { position: "fixed", top: hint.top, left: hint.left },
-            children: renderHint ? renderHint(hint) : /* @__PURE__ */ jsx3("kbd", { children: formatShortcut(
-              parseShortcut(hint.keys) ?? {
-                key: hint.keys,
-                ctrl: false,
-                alt: false,
-                shift: false,
-                meta: false,
-                mod: false,
-                source: hint.keys
-              }
-            ) })
+            children: renderHint ? renderHint(hint) : /* @__PURE__ */ jsx3("kbd", { children: formatShortcut(hint.keys) })
           },
           hint.id
         ))
@@ -838,17 +860,7 @@ function KeyboundHelp({
 }) {
   const commands = useKeyboundCommands();
   return /* @__PURE__ */ jsx4("ul", { className, style, "aria-label": "Keyboard shortcuts", children: commands.map((command) => /* @__PURE__ */ jsx4("li", { children: renderItem ? renderItem(command) : /* @__PURE__ */ jsxs2(Fragment3, { children: [
-    /* @__PURE__ */ jsx4("kbd", { children: formatShortcut(
-      parseShortcut(command.keys) ?? {
-        key: command.keys,
-        ctrl: false,
-        alt: false,
-        shift: false,
-        meta: false,
-        mod: false,
-        source: command.keys
-      }
-    ) }),
+    /* @__PURE__ */ jsx4("kbd", { children: formatShortcut(command.keys) }),
     command.label ? ` ${command.label}` : null
   ] }) }, command.id)) });
 }

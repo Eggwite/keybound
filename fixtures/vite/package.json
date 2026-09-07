@@ -8,7 +8,7 @@
   "dependencies": {
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-keybound": "0.1.0"
+    "react-keybound": "*"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

@@ -1,6 +1,6 @@
 {
   "name": "@keybound/web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,7 +21,7 @@
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-keybound": "0.1.0",
+    "react-keybound": "*",
     "sugar-high": "^1.0.0",
     "tailwind-merge": "^3.3.1"
   },

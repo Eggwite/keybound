@@ -7,9 +7,11 @@ import {
   KeyboundScope,
   Mnemonic,
   useMnemonic,
-  useKeyboundCommands,
+  useHotkey,
+  useKeyboundContext,
 } from 'react-keybound';
-import { Crosshair, Search, Terminal, X, ArrowDown, Smartphone } from 'lucide-react';
+import { formatShortcut } from 'react-keybound/core';
+import { Crosshair, Search, Terminal, X, ArrowDown } from 'lucide-react';
 import type {} from 'react-keybound/jsx';
 
 type DispatchRecord = {
@@ -20,121 +22,9 @@ type DispatchRecord = {
   time: string;
 };
 
-function MobileEnginePanel({
-  triggerEvent,
-  searchInputRef,
-}: {
-  triggerEvent: (id: string, key: string, type: 'mnemonic' | 'hotkey', target: string) => void;
-  searchInputRef: React.RefObject<HTMLInputElement | null>;
-}) {
-  const activeCommands = useKeyboundCommands();
-
-  // Directly mirror active registers known by the engine
-  const isSaveActive = activeCommands.some((c) => c.keys.toLowerCase().includes('+s'));
-  const isExportActive = activeCommands.some((c) => c.keys.toLowerCase().includes('+x'));
-  const isReloadActive = activeCommands.some((c) => c.keys.toLowerCase().includes('+l'));
-  const isFindActive = activeCommands.some((c) => c.keys.toLowerCase().includes('k'));
-  const isModalActive = activeCommands.some((c) => c.label.toLowerCase().includes('close'));
-
-  return (
-    <div className="rounded-card border border-border-strong bg-white p-3.5 shadow-xs mb-4 space-y-2.5">
-      <div className="flex items-center justify-between pb-2 border-b border-stone">
-        <div className="flex items-center gap-1.5">
-          <Smartphone className="size-3.5 text-ember" />
-          <span className="text-[11px] font-semibold tracking-wider text-charcoal uppercase">
-            Mobile Engine Controller
-          </span>
-        </div>
-        <span className="font-mono text-[10px] text-muted bg-stone px-2 py-0.5 rounded flex items-center gap-1.5">
-          <span
-            className={`size-1.5 rounded-full ${
-              isModalActive ? 'bg-ember animate-ping' : 'bg-grass'
-            }`}
-          />
-          {activeCommands.length} active register{activeCommands.length === 1 ? '' : 's'}
-        </span>
-      </div>
-
-      <p className="text-[11px] text-muted leading-relaxed">
-        {isModalActive ? (
-          <span className="text-ember font-medium">
-            Active modal scope captured registry. Background chords are disabled by precedence.
-          </span>
-        ) : (
-          'Direct registry mirror: tap virtual pads to dispatch actual chords through the Keybound engine.'
-        )}
-      </p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
-        <button
-          disabled={!isSaveActive}
-          onClick={() => {
-            const cmd = activeCommands.find((c) => c.keys.toLowerCase().includes('+s'));
-            cmd?.element?.click();
-            triggerEvent('save', 'Alt+S', 'mnemonic', 'button[Save]');
-          }}
-          className={`flex items-center justify-between px-2.5 py-1.5 rounded-control border text-[11px] font-medium transition-all ${
-            isSaveActive
-              ? 'bg-white border-border-strong text-ink hover:bg-sand active:scale-95 shadow-2xs cursor-pointer'
-              : 'bg-stone border-transparent text-faint cursor-not-allowed opacity-45'
-          }`}
-        >
-          <span>Save</span>
-          <span className="font-mono text-[9.5px] text-muted">Alt+S</span>
-        </button>
-
-        <button
-          disabled={!isExportActive}
-          onClick={() => {
-            const cmd = activeCommands.find((c) => c.keys.toLowerCase().includes('+x'));
-            cmd?.element?.click();
-            triggerEvent('export', 'Alt+X', 'mnemonic', 'button[Export]');
-          }}
-          className={`flex items-center justify-between px-2.5 py-1.5 rounded-control border text-[11px] font-medium transition-all ${
-            isExportActive
-              ? 'bg-white border-border-strong text-ink hover:bg-sand active:scale-95 shadow-2xs cursor-pointer'
-              : 'bg-stone border-transparent text-faint cursor-not-allowed opacity-45'
-          }`}
-        >
-          <span>Export</span>
-          <span className="font-mono text-[9.5px] text-muted">Alt+X</span>
-        </button>
-
-        <button
-          disabled={!isReloadActive}
-          onClick={() => {
-            const cmd = activeCommands.find((c) => c.keys.toLowerCase().includes('+l'));
-            cmd?.element?.click();
-            triggerEvent('reload', 'Alt+L', 'mnemonic', 'button[Reload]');
-          }}
-          className={`flex items-center justify-between px-2.5 py-1.5 rounded-control border text-[11px] font-medium transition-all ${
-            isReloadActive
-              ? 'bg-white border-border-strong text-ink hover:bg-sand active:scale-95 shadow-2xs cursor-pointer'
-              : 'bg-stone border-transparent text-faint cursor-not-allowed opacity-45'
-          }`}
-        >
-          <span>Reload</span>
-          <span className="font-mono text-[9.5px] text-muted">Alt+L</span>
-        </button>
-
-        <button
-          disabled={!isFindActive}
-          onClick={() => {
-            searchInputRef.current?.focus();
-            triggerEvent('find', '⌘K', 'hotkey', 'input[search]');
-          }}
-          className={`flex items-center justify-between px-2.5 py-1.5 rounded-control border text-[11px] font-medium transition-all ${
-            isFindActive
-              ? 'bg-white border-border-strong text-ink hover:bg-sand active:scale-95 shadow-2xs cursor-pointer'
-              : 'bg-stone border-transparent text-faint cursor-not-allowed opacity-45'
-          }`}
-        >
-          <span>Quick find</span>
-          <span className="font-mono text-[9.5px] text-muted">⌘K</span>
-        </button>
-      </div>
-    </div>
-  );
+function ModalBindings({ onClose }: { onClose: () => void }) {
+  useHotkey('escape', onClose);
+  return null;
 }
 
 function StudioCues({
@@ -146,31 +36,56 @@ function StudioCues({
   triggerEvent: (id: string, key: string, type: 'mnemonic' | 'hotkey', target: string) => void;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const { mnemonicModifier, apple } = useKeyboundContext();
+  const saveKey = formatShortcut(`${mnemonicModifier}+s`, apple);
+  const exportKey = formatShortcut(`${mnemonicModifier}+x`, apple);
+  const resetKey = formatShortcut(`${mnemonicModifier}+e`, apple);
+  const findKey = formatShortcut('mod+k', apple);
+
+  const executeSave = React.useCallback(() => {
+    searchInputRef.current?.blur();
+  }, [searchInputRef]);
+
+  const executeExport = React.useCallback(() => {
+    searchInputRef.current?.blur();
+  }, [searchInputRef]);
+
+  const executeReset = React.useCallback(() => {
+    searchInputRef.current?.blur();
+  }, [searchInputRef]);
+
   const saveMnemonic = useMnemonic('&Save changes', {
     allowInInput: true,
-    preventDefault: false,
-  });
-  const exportMnemonic = useMnemonic('E&xport document', {
-    allowInInput: true,
-    preventDefault: false,
-  });
-  const reloadMnemonic = useMnemonic('Re&load state', {
-    allowInInput: true,
-    preventDefault: false,
+    action: (_element, _event) => {
+      executeSave();
+      triggerEvent('save', saveKey, 'mnemonic', 'button[Save]');
+    },
   });
 
-  // Fallback for Ctrl/Cmd+K to prevent browser search bar interception
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-        triggerEvent('find', e.metaKey ? '⌘K' : 'Ctrl+K', 'hotkey', 'input[search]');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [searchInputRef, triggerEvent]);
+  const exportMnemonic = useMnemonic('E&xport document', {
+    allowInInput: true,
+    action: (_element, _event) => {
+      executeExport();
+      triggerEvent('export', exportKey, 'mnemonic', 'button[Export]');
+    },
+  });
+
+  const resetMnemonic = useMnemonic('Res&et state', {
+    allowInInput: true,
+    action: (_element, _event) => {
+      executeReset();
+      triggerEvent('reset', resetKey, 'mnemonic', 'button[Reset]');
+    },
+  });
+
+  useHotkey(
+    'mod+k',
+    () => {
+      searchInputRef.current?.focus();
+      triggerEvent('find', findKey, 'hotkey', 'input[search]');
+    },
+    { targetRef: searchInputRef, label: 'Quick find', allowInInput: true },
+  );
 
   return (
     <div className="space-y-1.5">
@@ -178,10 +93,7 @@ function StudioCues({
         ref={saveMnemonic.triggerProps.ref}
         aria-keyshortcuts={saveMnemonic.triggerProps['aria-keyshortcuts']}
         data-keybound="mnemonic"
-        onClick={() => {
-          searchInputRef.current?.blur();
-          triggerEvent('save', 'Alt+S', 'mnemonic', 'button[Save]');
-        }}
+        onClick={executeSave}
         className={`studio-cue ${activeCueId === 'save' ? 'studio-cue--active studio-cue--ember' : ''}`}
       >
         <span className="flex items-center gap-2 min-w-0">
@@ -190,17 +102,14 @@ function StudioCues({
           </span>
           <span className="truncate">{saveMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">Alt+S</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{saveKey}</span>
       </button>
 
       <button
         ref={exportMnemonic.triggerProps.ref}
         aria-keyshortcuts={exportMnemonic.triggerProps['aria-keyshortcuts']}
         data-keybound="mnemonic"
-        onClick={() => {
-          searchInputRef.current?.blur();
-          triggerEvent('export', 'Alt+X', 'mnemonic', 'button[Export]');
-        }}
+        onClick={executeExport}
         className={`studio-cue ${activeCueId === 'export' ? 'studio-cue--active studio-cue--blue' : ''}`}
       >
         <span className="flex items-center gap-2 min-w-0">
@@ -209,26 +118,23 @@ function StudioCues({
           </span>
           <span className="truncate">{exportMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">Alt+X</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{exportKey}</span>
       </button>
 
       <button
-        ref={reloadMnemonic.triggerProps.ref}
-        aria-keyshortcuts={reloadMnemonic.triggerProps['aria-keyshortcuts']}
+        ref={resetMnemonic.triggerProps.ref}
+        aria-keyshortcuts={resetMnemonic.triggerProps['aria-keyshortcuts']}
         data-keybound="mnemonic"
-        onClick={() => {
-          searchInputRef.current?.blur();
-          triggerEvent('reload', 'Alt+L', 'mnemonic', 'button[Reload]');
-        }}
-        className={`studio-cue ${activeCueId === 'reload' ? 'studio-cue--active studio-cue--grass' : ''}`}
+        onClick={executeReset}
+        className={`studio-cue ${activeCueId === 'reset' ? 'studio-cue--active studio-cue--grass' : ''}`}
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="flex-none flex items-center justify-center size-3 overflow-visible">
             <span className="cue-dot size-1.5 rounded-full bg-grass transition-transform duration-150" />
           </span>
-          <span className="truncate">{reloadMnemonic.label}</span>
+          <span className="truncate">{resetMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">Alt+L</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{resetKey}</span>
       </button>
 
       <div
@@ -240,16 +146,15 @@ function StudioCues({
         <input
           ref={searchInputRef}
           type="text"
-          hotkey="mod+k"
           placeholder="Quick find..."
           className="w-full h-[30px] pl-7 pr-9 rounded-control border border-border bg-white text-[11px] text-ink placeholder:text-muted focus:border-violet focus:ring-1 focus:ring-violet outline-none shadow-xs transition-colors"
           onKeyDown={(e) => {
             if (e.key === 'Escape') e.currentTarget.blur();
           }}
         />
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted pointer-events-none">
-          ⌘K
-        </span>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+          <kbd className="font-mono text-[10px] text-muted">{findKey}</kbd>
+        </div>
       </div>
     </div>
   );
@@ -257,37 +162,15 @@ function StudioCues({
 
 export function KeyboundStudio() {
   const [revealMode, setRevealMode] = React.useState<'always' | 'modifier' | 'never'>('always');
+  const [modifierSetting, setModifierSetting] = React.useState<'auto' | 'ctrl' | 'alt'>('auto');
   const [showOverlay, setShowOverlay] = React.useState(false);
   const [activeCueId, setActiveCueId] = React.useState<string | null>(null);
   const [events, setEvents] = React.useState<DispatchRecord[]>([]);
   const [pulseCount, setPulseCount] = React.useState(0);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [isTouchDevice, setIsTouchDevice] = React.useState(false);
 
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Close modal on Escape
-  React.useEffect(() => {
-    if (!isModalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isModalOpen]);
-
-  React.useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      ('ontouchstart' in window || navigator.maxTouchPoints > 0)
-    ) {
-      setIsTouchDevice(true);
-    }
-  }, []);
+  const cueTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const triggerEvent = React.useCallback(
     (id: string, key: string, type: 'mnemonic' | 'hotkey', target: string) => {
@@ -312,21 +195,17 @@ export function KeyboundStudio() {
         searchInputRef.current.focus();
       }
 
-      setTimeout(() => {
-        setActiveCueId((current) => (current === id ? null : current));
+      if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
+      cueTimerRef.current = setTimeout(() => {
+        setActiveCueId(null);
       }, 350);
     },
     [],
   );
 
   return (
-    <KeyboundProvider reveal={revealMode}>
+    <KeyboundProvider reveal={revealMode} mnemonicModifier={modifierSetting}>
       <div className="w-full">
-        {/* Mobile Engine Controller: Directly mirrors active registers with live disabled state for modal scopes */}
-        <div className={isTouchDevice ? 'block' : 'block lg:hidden'}>
-          <MobileEnginePanel triggerEvent={triggerEvent} searchInputRef={searchInputRef} />
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden rounded-card border border-border bg-white shadow-lift relative h-100">
           <div className="absolute top-2.5 left-2.5 pointer-events-none opacity-20">
             <Crosshair className="size-3 text-charcoal" />
@@ -388,7 +267,7 @@ export function KeyboundStudio() {
                                 ? 'bg-ember'
                                 : ev.key.toLowerCase().includes('+x')
                                   ? 'bg-blue'
-                                  : ev.key.toLowerCase().includes('+l')
+                                  : ev.key.toLowerCase().includes('+e')
                                     ? 'bg-grass'
                                     : 'bg-violet'
                             }`}
@@ -442,7 +321,7 @@ export function KeyboundStudio() {
                             : 'text-muted hover:text-charcoal'
                         }`}
                       >
-                        {m === 'modifier' ? 'alt' : m}
+                        {m === 'modifier' ? 'hold mod' : m}
                       </button>
                     ))}
                   </div>
@@ -460,9 +339,21 @@ export function KeyboundStudio() {
 
                 <div className="inspector-row">
                   <span className="font-medium text-charcoal">Modifier</span>
-                  <span className="font-mono text-[10.5px] text-muted bg-stone px-1.5 py-0.5 rounded border border-border">
-                    Alt / Option
-                  </span>
+                  <div className="flex items-center gap-0.5 bg-stone p-0.5 rounded-[5px] text-[10.5px]">
+                    {(['auto', 'ctrl', 'alt'] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setModifierSetting(m)}
+                        className={`px-1.5 py-0.5 rounded-[4px] uppercase cursor-pointer transition-all ${
+                          modifierSetting === m
+                            ? 'bg-white font-semibold text-ink shadow-xs'
+                            : 'text-muted hover:text-charcoal'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -484,6 +375,7 @@ export function KeyboundStudio() {
             />
 
             <KeyboundScope modal active>
+              <ModalBindings onClose={() => setIsModalOpen(false)} />
               <div
                 role="dialog"
                 aria-modal="true"
@@ -507,12 +399,8 @@ export function KeyboundStudio() {
                 </div>
 
                 <p className="text-[12px] text-charcoal leading-relaxed">
-                  While this modal scope is active, background shortcuts (
-                  <span className="font-mono text-[10.5px] bg-stone px-1 py-0.5 rounded">
-                    Alt+S
-                  </span>
-                  , <span className="font-mono text-[10.5px] bg-stone px-1 py-0.5 rounded">⌘K</span>
-                  ) are automatically suppressed by the dispatcher.
+                  While this modal scope is active, background shortcuts are automatically
+                  suppressed by the dispatcher.
                 </p>
 
                 <div className="flex items-center justify-between pt-1">

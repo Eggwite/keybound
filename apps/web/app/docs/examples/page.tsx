@@ -12,7 +12,9 @@ import {
   useMnemonic,
   useHotkey,
   useKeyboundCommands,
+  useKeyboundContext,
 } from 'react-keybound';
+import { formatShortcut } from 'react-keybound/core';
 import { CodeBlock } from '@/components/code-block';
 import {
   Command,
@@ -65,17 +67,17 @@ const formHotkeysCode = `// 1. Focus search input on Command/Ctrl+K
 const manualWrappersCode = `// 1. Import zero-compiler manual wrappers from react-keybound
 import { Mnemonic, Hotkey } from "react-keybound";
 
-// 2. Wrap button with Mnemonic component to bind Alt+S
-<Mnemonic text="&Save">
+// 2. Wrap button with Mnemonic component to bind Alt+R
+<Mnemonic text="&Reload">
 
-  <button onClick={handleSave}>Save</button>
+  <button onClick={handleReload}>Reload</button>
 
 </Mnemonic>
 
-// 3. Wrap input with Hotkey component to bind Command/Ctrl+K
-<Hotkey keys="mod+k" label="Search">
+// 3. Wrap button with Hotkey component to bind Command/Ctrl+B
+<Hotkey keys="mod+b" label="Build project">
 
-  <input placeholder="Search..." aria-label="Search" />
+  <button onClick={handleBuild}>Build</button>
 
 </Hotkey>`;
 
@@ -120,14 +122,14 @@ import { useHotkey } from "react-keybound";
 // 2. Headless application shortcut without a visual DOM target
 export function DocumentEditor() {
 
-  // Register global shortcut with automatic preventDefault
-  useHotkey("mod+s", (e) => {
+  // Register headless shortcut with automatic preventDefault
+  useHotkey("mod+j", (e) => {
 
     e.preventDefault();
 
-    saveDocument();
+    openJumpPalette();
 
-  }, { label: "Save document" });
+  }, { label: "Quick Jump" });
 
   // Escape key handler scoped to the active component
   useHotkey("escape", () => {
@@ -271,14 +273,12 @@ function LiveCommandsInspector() {
 }
 
 function RichMnemonicDemo({ onFire, fired }: { onFire: () => void; fired: boolean }) {
+  const { apple, mnemonicModifier } = useKeyboundContext();
+  const uploadKey = formatShortcut(`${mnemonicModifier}+u`, apple);
   const [uploading, setUploading] = React.useState(false);
   const [completed, setCompleted] = React.useState(false);
 
-  const { label, triggerProps } = useMnemonic<HTMLButtonElement>('&Upload to Cloud', {
-    className: 'text-ember font-semibold underline decoration-2 underline-offset-2',
-  });
-
-  const handleUpload = () => {
+  const handleUpload = React.useCallback(() => {
     if (uploading) return;
     setUploading(true);
     setCompleted(false);
@@ -288,7 +288,14 @@ function RichMnemonicDemo({ onFire, fired }: { onFire: () => void; fired: boolea
       setCompleted(true);
       setTimeout(() => setCompleted(false), 2000);
     }, 600);
-  };
+  }, [uploading, onFire]);
+
+  const { label, triggerProps } = useMnemonic<HTMLButtonElement>('&Upload to Cloud', {
+    className: 'text-ember font-semibold underline decoration-2 underline-offset-2',
+    action: () => {
+      handleUpload();
+    },
+  });
 
   return (
     <div className="flex items-center justify-between flex-wrap gap-3">
@@ -308,13 +315,13 @@ function RichMnemonicDemo({ onFire, fired }: { onFire: () => void; fired: boolea
         <span>
           {uploading ? 'Uploading revisions...' : completed ? 'Uploaded to Cloud!' : label}
         </span>
-        <span className="font-mono text-[10px] text-muted ml-2">Alt+U</span>
+        <span className="font-mono text-[10px] text-muted ml-2">{uploadKey}</span>
       </button>
 
       <div className="min-h-[22px]">
         <FeedbackBadge
           status={fired ? 'fired' : 'idle'}
-          message="Alt+U dispatched to Rich useMnemonic!"
+          message={`${uploadKey} dispatched to Rich useMnemonic!`}
         />
       </div>
     </div>
@@ -348,6 +355,21 @@ function useTransitionPresence(isOpen: boolean, duration = 220) {
 }
 
 function ExamplesContent() {
+  const { apple, mnemonicModifier } = useKeyboundContext();
+  const saveKey = formatShortcut(`${mnemonicModifier}+s`, apple);
+  const exportKey = formatShortcut(`${mnemonicModifier}+x`, apple);
+  const closeKey = formatShortcut(`${mnemonicModifier}+c`, apple);
+  const findKey = formatShortcut('mod+k', apple);
+  const autosaveShortcut = apple ? 'mod+shift+a' : 'alt+a';
+  const autosaveKey = formatShortcut(autosaveShortcut, apple);
+  const reloadKey = formatShortcut(`${mnemonicModifier}+r`, apple);
+  const buildShortcut = apple ? 'mod+shift+b' : 'mod+b';
+  const buildKey = formatShortcut(buildShortcut, apple);
+  const uploadKey = formatShortcut(`${mnemonicModifier}+u`, apple);
+  const jumpShortcut = 'mod+j';
+  const jumpKey = formatShortcut(jumpShortcut, apple);
+  const validateKey = formatShortcut(`${mnemonicModifier}+v`, apple);
+
   // Demo states
   const [feedback, setFeedback] = React.useState<{ [key: string]: boolean }>({});
   const [buttonStates, setButtonStates] = React.useState<{
@@ -359,7 +381,6 @@ function ExamplesContent() {
     modalOpen,
     220,
   );
-  const [modalBlockedKey, setModalBlockedKey] = React.useState<string | null>(null);
   const [modalSaving, setModalSaving] = React.useState(false);
   const [isDisabled, setIsDisabled] = React.useState(false);
   const [isHidden, setIsHidden] = React.useState(false);
@@ -378,47 +399,20 @@ function ExamplesContent() {
       setTimeout(() => {
         setButtonStates((prev) => ({ ...prev, [id]: 'idle' }));
         setFeedback((prev) => ({ ...prev, [id]: false }));
-      }, 1400);
-    }, 350);
+      }, 1500);
+    }, 400);
   };
 
-  // Headless hotkey demo
+  // Section 5: Headless shortcut
   useHotkey(
-    'mod+s',
+    jumpShortcut,
     (e) => {
       e.preventDefault();
       setHeadlessCounter((c) => c + 1);
-      fire('headless-save', 'Headless Save (⌘S / Ctrl+S)');
+      fire('headless-jump', `Headless Quick Jump (${jumpKey})`);
     },
-    { label: 'Headless Save' },
+    { label: 'Headless Quick Jump', allowInInput: true },
   );
-
-  // Close modal on Escape, and detect blocked background chords
-  React.useEffect(() => {
-    if (!modalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        setModalOpen(false);
-        return;
-      }
-      if (
-        e.altKey &&
-        (e.key === 's' ||
-          e.key === 'S' ||
-          e.key === 'x' ||
-          e.key === 'X' ||
-          e.key === 'c' ||
-          e.key === 'C')
-      ) {
-        e.preventDefault();
-        setModalBlockedKey(`Alt+${e.key.toUpperCase()}`);
-        setTimeout(() => setModalBlockedKey(null), 1600);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [modalOpen]);
 
   return (
     <div className="space-y-12">
@@ -436,47 +430,46 @@ function ExamplesContent() {
       <section className="space-y-4">
         <SectionHeading
           title="JSX Mnemonics & Letter Positioning"
-          description="Use & anywhere in button or label text. The compiler automatically transforms it into an underlined mnemonic with Alt+* keyboard intent."
+          description="Use & anywhere in button or label text. The compiler automatically transforms it into an underlined mnemonic with platform-aware keyboard intent."
           icon={Command}
         />
 
         <div className="p-4 rounded-card bg-white border border-border shadow-lift space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => fire('save', 'Saved with Alt+S')}
-              className="btn btn--orange btn--sm flex items-center gap-1.5"
-            >
-              &Save
-            </button>
+            <Mnemonic text="&Save" action={() => fire('save', `Saved with ${saveKey}`)}>
+              <button className="btn btn--orange btn--sm flex items-center gap-1.5">Save</button>
+            </Mnemonic>
 
-            <button
-              onClick={() => fire('export', 'Exported with Alt+X')}
-              className="btn btn--quiet btn--sm flex items-center gap-1.5"
-            >
-              E&xport
-            </button>
+            <Mnemonic text="E&xport" action={() => fire('export', `Exported with ${exportKey}`)}>
+              <button className="btn btn--quiet btn--sm flex items-center gap-1.5">Export</button>
+            </Mnemonic>
 
-            <button
-              onClick={() => fire('close', 'Saved & Closed with Alt+C')}
-              className="btn btn--quiet btn--sm flex items-center gap-1.5"
+            <Mnemonic
+              text="Save && &Close"
+              action={() => fire('close', `Saved & Closed with ${closeKey}`)}
             >
-              Save && &Close
-            </button>
+              <button className="btn btn--quiet btn--sm flex items-center gap-1.5">
+                Save && Close
+              </button>
+            </Mnemonic>
           </div>
 
           <div className="flex items-center gap-3 min-h-[22px]">
-            <FeedbackBadge status={feedback.save ? 'fired' : 'idle'} message="Alt+S dispatched!" />
+            <FeedbackBadge
+              status={feedback.save ? 'fired' : 'idle'}
+              message={`${saveKey} dispatched!`}
+            />
             <FeedbackBadge
               status={feedback.export ? 'fired' : 'idle'}
-              message="Alt+X dispatched!"
+              message={`${exportKey} dispatched!`}
             />
             <FeedbackBadge
               status={feedback.close ? 'fired' : 'idle'}
-              message="Alt+C dispatched (&& decoded)!"
+              message={`${closeKey} dispatched (&& decoded)!`}
             />
             {!feedback.save && !feedback.export && !feedback.close && (
               <span className="text-[11px] text-muted font-mono">
-                Press Alt+S, Alt+X, or Alt+C to test live activation.
+                Press {saveKey}, {exportKey}, or {closeKey} to test live activation.
               </span>
             )}
           </div>
@@ -497,37 +490,40 @@ function ExamplesContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label htmlFor="quick-search-input" className="text-[12px] font-medium text-charcoal">
-                Quick Search (⌘K / Ctrl+K)
+                Quick Search ({findKey})
               </label>
               <div className="relative">
                 <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-                <input
-                  id="quick-search-input"
-                  ref={searchInputRef}
-                  type="text"
-                  hotkey="mod+k"
-                  placeholder="Press ⌘K or Ctrl+K to focus..."
-                  onFocus={() => fire('search', 'Focused search field')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      e.preventDefault();
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  className="w-full h-8 pl-8 pr-12 rounded-control border border-border bg-white text-[12px] text-ink placeholder:text-muted focus:border-ember focus:ring-1 focus:ring-ember outline-none transition-colors"
-                />
+                <Hotkey keys="mod+k" label="Quick search" allowInInput>
+                  <input
+                    id="quick-search-input"
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder={`Press ${findKey} to focus...`}
+                    onFocus={() => fire('search', 'Focused search field')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    className="w-full h-8 pl-8 pr-12 rounded-control border border-border bg-white text-[12px] text-ink placeholder:text-muted focus:border-ember focus:ring-1 focus:ring-ember outline-none transition-colors"
+                  />
+                </Hotkey>
                 <kbd className="absolute right-2 top-1/2 -translate-y-1/2 kbd-badge text-[9.5px]">
-                  ⌘K
+                  {findKey}
                 </kbd>
               </div>
               <span className="text-[10px] text-muted block">Press Esc to exit input focus</span>
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-[12px] font-medium text-charcoal">Toggle Switch (Alt+A)</div>
+              <div className="text-[12px] font-medium text-charcoal">
+                Toggle Switch ({autosaveKey})
+              </div>
               <div className="flex items-center justify-between p-1.5 px-3 rounded-control border border-border bg-sand">
                 <span className="text-[12px] text-charcoal">Autosave changes</span>
-                <Hotkey keys="alt+a" label="Toggle autosave" allowInInput>
+                <Hotkey keys={autosaveShortcut} label="Toggle autosave" allowInInput>
                   <button
                     role="switch"
                     aria-checked={toggleAutosave}
@@ -536,7 +532,7 @@ function ExamplesContent() {
                       fire('autosave', `Autosave toggled: ${!toggleAutosave ? 'ON' : 'OFF'}`);
                     }}
                     className="tactile-switch transition-transform active:scale-95 cursor-pointer"
-                    title="Toggle autosave with Alt+A"
+                    title={`Toggle autosave with ${autosaveKey}`}
                   >
                     <span className="knob" />
                   </button>
@@ -551,7 +547,7 @@ function ExamplesContent() {
           <div className="min-h-[22px]">
             <FeedbackBadge
               status={feedback.search ? 'fired' : 'idle'}
-              message="Search focused via ⌘K!"
+              message={`Search focused via ${findKey}!`}
             />
             <FeedbackBadge
               status={feedback.autosave ? 'fired' : 'idle'}
@@ -573,25 +569,23 @@ function ExamplesContent() {
 
         <div className="p-4 rounded-card bg-white border border-border shadow-lift flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <Mnemonic text="&Deploy">
-              <button
-                data-keybound-ignore
-                onClick={() => fire('deploy', 'Deploy triggered with Alt+D')}
-                className="btn btn--quiet btn--sm flex items-center gap-1.5"
-              >
-                {buttonStates.deploy === 'loading' ? (
+            <Mnemonic
+              text="&Reload"
+              action={() => fire('reload-manual', `Reload triggered with ${reloadKey}`)}
+            >
+              <button className="btn btn--quiet btn--sm flex items-center gap-1.5">
+                {buttonStates['reload-manual'] === 'loading' ? (
                   <Loader2 className="size-3.5 animate-spin text-ember" />
-                ) : buttonStates.deploy === 'success' ? (
+                ) : buttonStates['reload-manual'] === 'success' ? (
                   <Check className="size-3.5 text-grass" />
                 ) : null}
-                <span>Deploy</span>
+                <span>Reload</span>
               </button>
             </Mnemonic>
 
-            <Hotkey keys="mod+b" label="Build project">
+            <Hotkey keys={buildShortcut} label="Build project">
               <button
-                data-keybound-ignore
-                onClick={() => fire('build', 'Build triggered with ⌘B / Ctrl+B')}
+                onClick={() => fire('build', `Build triggered with ${buildKey}`)}
                 className="btn btn--quiet btn--sm flex items-center gap-1.5"
               >
                 {buttonStates.build === 'loading' ? (
@@ -599,19 +593,19 @@ function ExamplesContent() {
                 ) : buttonStates.build === 'success' ? (
                   <Check className="size-3.5 text-grass" />
                 ) : null}
-                <span>Build (⌘B)</span>
+                <span>Build ({buildKey})</span>
               </button>
             </Hotkey>
           </div>
 
           <div className="min-h-[22px]">
             <FeedbackBadge
-              status={feedback.deploy ? 'fired' : 'idle'}
-              message="Manual <Mnemonic> fired Alt+D!"
+              status={feedback['reload-manual'] ? 'fired' : 'idle'}
+              message={`Manual <Mnemonic> fired ${reloadKey}!`}
             />
             <FeedbackBadge
               status={feedback.build ? 'fired' : 'idle'}
-              message="Manual <Hotkey> fired ⌘B!"
+              message={`Manual <Hotkey> fired ${buildKey}!`}
             />
           </div>
         </div>
@@ -628,7 +622,7 @@ function ExamplesContent() {
 
         <div className="p-4 rounded-card bg-white border border-border shadow-lift space-y-3">
           <RichMnemonicDemo
-            onFire={() => fire('upload', 'Upload triggered via Alt+U')}
+            onFire={() => fire('upload', `Upload triggered via ${uploadKey}`)}
             fired={Boolean(feedback.upload)}
           />
         </div>
@@ -646,20 +640,20 @@ function ExamplesContent() {
         <div className="p-4 rounded-card bg-white border border-border shadow-lift flex items-center justify-between flex-wrap gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-[13px] text-ink">Headless ⌘S / Ctrl+S</span>
+              <span className="font-medium text-[13px] text-ink">Headless {jumpKey}</span>
               <span className="font-mono text-[11px] text-muted bg-stone px-2 py-0.5 rounded">
                 Dispatches: {headlessCounter}
               </span>
             </div>
             <p className="text-[12px] text-muted">
-              Press ⌘S or Ctrl+S anywhere on this page to trigger the headless handler.
+              Press {jumpKey} anywhere on this page to trigger the headless handler.
             </p>
           </div>
 
           <div className="min-h-[22px]">
             <FeedbackBadge
-              status={feedback['headless-save'] ? 'fired' : 'idle'}
-              message="Headless ⌘S handled!"
+              status={feedback['headless-jump'] ? 'fired' : 'idle'}
+              message={`Headless ${jumpKey} handled!`}
             />
           </div>
         </div>
@@ -723,21 +717,15 @@ function ExamplesContent() {
 
                   <div className="space-y-2">
                     <p className="text-[12px] text-charcoal leading-relaxed">
-                      While this modal is open, background shortcuts (like Alt+S or Alt+X on the
-                      main page) are completely suppressed by the active modal scope.
+                      While this modal is open, background shortcuts (like {saveKey} or {exportKey}{' '}
+                      on the main page) are completely suppressed by the active modal scope.
                     </p>
 
-                    {modalBlockedKey ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-ember bg-sand px-2 py-1.5 rounded border border-ember/30 animate-pulse">
-                        <Zap className="size-3.5 shrink-0" />
-                        <span>{modalBlockedKey} suppressed by active scope!</span>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-muted font-mono">
-                        Try pressing <kbd className="kbd-badge text-[9px]">Alt+S</kbd> or{' '}
-                        <kbd className="kbd-badge text-[9px]">Alt+X</kbd> to test suppression.
-                      </p>
-                    )}
+                    <p className="text-[11px] text-muted font-mono">
+                      Background shortcuts (<kbd className="kbd-badge text-[9px]">{saveKey}</kbd>,{' '}
+                      <kbd className="kbd-badge text-[9px]">{exportKey}</kbd>) are blocked while
+                      this scope is active.
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-stone">
@@ -751,19 +739,21 @@ function ExamplesContent() {
                       </button>
                     </Hotkey>
 
-                    <button
-                      onClick={() => {
-                        setModalSaving(true);
-                        setTimeout(() => {
-                          setModalSaving(false);
-                          setModalOpen(false);
-                        }, 400);
-                      }}
-                      disabled={modalSaving}
-                      className="btn btn--orange btn--sm flex items-center gap-1.5"
-                    >
-                      &Close modal
-                    </button>
+                    <Mnemonic text="&Close modal">
+                      <button
+                        onClick={() => {
+                          setModalSaving(true);
+                          setTimeout(() => {
+                            setModalSaving(false);
+                            setModalOpen(false);
+                          }, 400);
+                        }}
+                        disabled={modalSaving}
+                        className="btn btn--orange btn--sm flex items-center gap-1.5"
+                      >
+                        Close modal
+                      </button>
+                    </Mnemonic>
                   </div>
                 </div>
               </KeyboundScope>
@@ -806,14 +796,18 @@ function ExamplesContent() {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button
-                disabled={isDisabled}
-                style={{ display: isHidden ? 'none' : 'inline-flex' }}
-                onClick={() => fire('review', 'Review activated with Alt+R!')}
-                className={`btn btn--sm ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'btn--quiet'}`}
+              <Mnemonic
+                text="&Validate item"
+                action={() => fire('validate', `Validate activated with ${validateKey}!`)}
               >
-                &Review item
-              </button>
+                <button
+                  disabled={isDisabled}
+                  style={{ display: isHidden ? 'none' : 'inline-flex' }}
+                  className={`btn btn--sm ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'btn--quiet'}`}
+                >
+                  Validate item
+                </button>
+              </Mnemonic>
 
               {isHidden && (
                 <span className="text-[11px] text-muted italic">
@@ -824,8 +818,8 @@ function ExamplesContent() {
 
             <div className="min-h-[22px]">
               <FeedbackBadge
-                status={feedback.review ? 'fired' : 'idle'}
-                message="Alt+R dispatched to Review!"
+                status={feedback.validate ? 'fired' : 'idle'}
+                message={`${validateKey} dispatched to Validate!`}
               />
             </div>
           </div>

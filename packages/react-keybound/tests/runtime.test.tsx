@@ -56,6 +56,27 @@ describe('runtime dispatch', () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 
+  it('strictly adheres to semantic matching and does not dispatch layout-specific glyphs or dead keys', () => {
+    const save = vi.fn();
+    const customAction = vi.fn();
+    render(
+      <KeyboundProvider>
+        <Mnemonic text="&Save">
+          <button onClick={save}>Save</button>
+        </Mnemonic>
+        <Hotkey keys="alt+s" action={customAction}>
+          <button>Custom</button>
+        </Hotkey>
+      </KeyboundProvider>,
+    );
+    // On macOS, Option+S produces '\u00df' with code 'KeyS'. Semantic matching must reject this.
+    expect(keydown({ key: '\u00df', code: 'KeyS', altKey: true })).toBe(true);
+    // Dead key accent prefix must also be rejected
+    expect(keydown({ key: 'Dead', code: 'KeyS', altKey: true })).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+    expect(customAction).not.toHaveBeenCalled();
+  });
+
   it('does not consume hidden, disabled, closed-details, editable or composing bindings', () => {
     const run = vi.fn();
     const Command = () => {
@@ -413,5 +434,72 @@ describe('runtime dispatch', () => {
     const mnemonic = word?.querySelector('[data-keybound-mnemonic]');
     expect(mnemonic?.textContent).toBe('x');
     expect(keydown({ key: 'x', altKey: true })).toBe(false);
+  });
+
+  it('resolves mnemonicModifier auto to mod on Apple platforms and triggers with metaKey', () => {
+    const originalUserAgent = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      configurable: true,
+    });
+    const save = vi.fn();
+    const onWarning = vi.fn();
+    try {
+      render(
+        <KeyboundProvider onWarning={onWarning}>
+          <Mnemonic text="&Save">
+            <button onClick={save}>Save</button>
+          </Mnemonic>
+        </KeyboundProvider>,
+      );
+      // Under auto on Mac, mod resolves to metaKey (⌘)
+      expect(keydown({ key: 's', metaKey: true })).toBe(false);
+      expect(save).toHaveBeenCalledTimes(1);
+
+      // Warning should not fire for auto
+      expect(onWarning).not.toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'mac-alt-mnemonic' }),
+      );
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUserAgent,
+        configurable: true,
+      });
+    }
+  });
+
+  it('warns when alt is explicitly configured on Apple platforms and honors suppression', () => {
+    const originalUserAgent = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      configurable: true,
+    });
+    const onWarning = vi.fn();
+    try {
+      const screen = render(
+        <KeyboundProvider mnemonicModifier="alt" onWarning={onWarning}>
+          <Mnemonic text="&Save">
+            <button>Save</button>
+          </Mnemonic>
+        </KeyboundProvider>,
+      );
+      expect(onWarning).toHaveBeenCalledWith(expect.objectContaining({ code: 'mac-alt-mnemonic' }));
+      screen.unmount();
+      onWarning.mockClear();
+
+      render(
+        <KeyboundProvider mnemonicModifier="alt" warnings={false} onWarning={onWarning}>
+          <Mnemonic text="&Save">
+            <button>Save</button>
+          </Mnemonic>
+        </KeyboundProvider>,
+      );
+      expect(onWarning).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUserAgent,
+        configurable: true,
+      });
+    }
   });
 });

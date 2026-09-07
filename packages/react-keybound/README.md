@@ -28,7 +28,7 @@
 
 Desktop-grade keyboard ergonomics for React apps:
 
-- **Mnemonics**: Native `Alt+<key>` accelerators via `&` syntax (`<button>&File</button>`) with semantic underlines.
+- **Mnemonics**: Platform-aware accelerators via `&` syntax (`<button>&File</button>`) with semantic underlines (`Alt+F` on Windows/Linux, `⌘F` on macOS).
 - **Hotkeys**: Declarative element bindings (`<input hotkey="mod+k" />`).
 - **Modal Scoping**: Blocks background shortcuts when dialogs, sheets, or palettes are active.
 - **Overlay Hints**: Floating keycap badges on demand (`<KeyboundOverlay />`).
@@ -55,6 +55,7 @@ import { KeyboundProvider } from 'react-keybound';
 import type {} from 'react-keybound/jsx';
 
 export function App({ children }: { children: React.ReactNode }) {
+  // mnemonicModifier="auto" defaults to Alt on Windows/Linux and ⌘ (mod) on macOS/iPadOS
   return <KeyboundProvider>{children}</KeyboundProvider>;
 }
 ```
@@ -67,7 +68,7 @@ With the compiler enabled:
 export function Toolbar() {
   return (
     <nav>
-      {/* Alt+F triggers File, Alt+E triggers Edit */}
+      {/* Alt+F / ⌘F triggers File, Alt+E / ⌘E triggers Edit */}
       <button onClick={() => openMenu('file')}>&File</button>
       <button onClick={() => openMenu('edit')}>&Edit</button>
 
@@ -80,9 +81,36 @@ export function Toolbar() {
 
 Syntax:
 
-- `&Save` &rarr; <ins>S</ins>ave (`Alt+S`)
-- `E&xport` &rarr; E<ins>x</ins>port (`Alt+X`)
-- `Save && &Close` &rarr; Save & <ins>C</ins>lose (`Alt+C`, `&&` for literal `&`)
+- `&Save` &rarr; <ins>S</ins>ave (`Alt+S` on Windows/Linux, `⌘S` on macOS)
+- `E&xport` &rarr; E<ins>x</ins>port (`Alt+X` on Windows/Linux, `⌘X` on macOS)
+- `Save && &Close` &rarr; Save & <ins>C</ins>lose (`Alt+C` / `⌘C`, `&&` for literal `&`)
+
+### Cross-Platform Modifiers & macOS Quirks
+
+By default, `<KeyboundProvider>` sets `mnemonicModifier="auto"`:
+
+- **Windows & Linux**: Uses `Alt` (`Alt+S`).
+- **macOS & iPadOS**: Uses `mod` / `Command` (`⌘S`).
+
+#### Why not `Option` on macOS?
+
+On Apple hardware, the `Option` (`⌥`) key is an alternate character and dead-key composer. Pressing `Option+S` outputs `ß`, and `Option+E` produces `Dead`. Under Keybound's pure semantic matching (`KeyboardEvent.key`), these glyphs do not match ASCII letters. Using `mod` (`⌘`) keeps mnemonics accessible as clean semantic characters.
+
+#### Granular Platform Mapping
+
+If you want to avoid browser-reserved shortcuts on Mac (e.g. `⌘W` or `⌘T`), you can map `mac` to `Control` (`⌃`), which is completely free from browser intercepts:
+
+```tsx
+<KeyboundProvider
+  mnemonicModifier={{
+    mac: 'ctrl', // ⌃S on macOS
+    windows: 'alt', // Alt+S on Windows
+    linux: 'alt', // Alt+S on Linux
+  }}
+>
+  {children}
+</KeyboundProvider>
+```
 
 ### 3. Hooks (Compiler-Free)
 

@@ -24,3 +24,4 @@ export {
 } from './help';
 export { radixSelectAction } from './adapters';
 export type { KeyboundWarning, WarningCode, Action } from './registry';
+export type { MnemonicModifierSetting, PlatformModifierMap } from './core';

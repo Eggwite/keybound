@@ -51,7 +51,7 @@ export function SiteHeader() {
             <span>keybound</span>
           </Link>
           <span className="rounded-full border border-stone bg-white px-2 py-0.5 font-mono text-[10px] text-muted">
-            v0.1.0
+            v0.1.1
           </span>
         </div>
 

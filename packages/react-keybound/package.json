@@ -1,6 +1,6 @@
 {
   "name": "react-keybound",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compile-time keyboard interactions for React. Inline mnemonics, shortcuts, scopes and hints.",
   "type": "module",
   "license": "MIT",

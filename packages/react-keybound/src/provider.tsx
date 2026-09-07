@@ -1,7 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { isApplePlatform, matchesShortcutModifiers, parseShortcut } from './core';
+import {
+  isApplePlatform,
+  matchesShortcutModifiers,
+  parseShortcut,
+  resolveMnemonicModifier,
+  type MnemonicModifierSetting,
+} from './core';
 import {
   KeyboundRegistry,
   type KeyboundWarning,
@@ -12,7 +18,7 @@ import {
 export type KeyboundProviderProps = {
   children: React.ReactNode;
   enabled?: boolean;
-  mnemonicModifier?: string;
+  mnemonicModifier?: MnemonicModifierSetting;
   reveal?: 'always' | 'modifier' | 'never';
   warnings?: WarningSetting;
   onWarning?: (warning: KeyboundWarning) => void;
@@ -45,58 +51,80 @@ export function useKeyboundScope(): ScopeRecord | null {
 export function KeyboundProvider({
   children,
   enabled = true,
-  mnemonicModifier = 'alt',
+  mnemonicModifier = 'auto',
   reveal = 'always',
   warnings,
   onWarning,
   collision = 'last',
 }: KeyboundProviderProps): React.ReactElement {
+  const [apple, setApple] = React.useState(false);
+  React.useEffect(() => setApple(isApplePlatform()), []);
+
+  const resolvedModifier = React.useMemo(
+    () => resolveMnemonicModifier(mnemonicModifier, apple),
+    [mnemonicModifier, apple],
+  );
+
   const registryRef = React.useRef<KeyboundRegistry | null>(null);
   if (!registryRef.current)
     registryRef.current = new KeyboundRegistry({
       enabled,
-      mnemonicModifier,
+      mnemonicModifier: resolvedModifier,
       collision,
       warnings,
       onWarning,
     });
   const registry = registryRef.current;
   const modifierShortcut = React.useMemo(
-    () => parseShortcut(`${mnemonicModifier}+x`),
-    [mnemonicModifier],
+    () => parseShortcut(`${resolvedModifier}+x`),
+    [resolvedModifier],
   );
   React.useEffect(
-    () => registry.updateConfig({ enabled, mnemonicModifier, collision, warnings, onWarning }),
-    [registry, enabled, mnemonicModifier, collision, warnings, onWarning],
+    () =>
+      registry.updateConfig({
+        enabled,
+        mnemonicModifier: resolvedModifier,
+        collision,
+        warnings,
+        onWarning,
+      }),
+    [registry, enabled, resolvedModifier, collision, warnings, onWarning],
   );
-  const [modifierDown, setModifierDown] = React.useState(false);
-  const [apple, setApple] = React.useState(false);
-
-  React.useEffect(() => setApple(isApplePlatform()), []);
-  React.useEffect(() => setModifierDown(false), [mnemonicModifier]);
 
   React.useEffect(() => {
-    const keydown = (event: KeyboardEvent) => {
-      if (modifierShortcut) setModifierDown(matchesShortcutModifiers(modifierShortcut, event));
-      registry.dispatch(event);
+    if (apple && resolvedModifier === 'alt') {
+      registry.warnGlobal(
+        'mac-alt-mnemonic',
+        "Option on macOS/iPadOS produces glyphs/accents. Use 'auto', 'mod', or 'ctrl'.",
+      );
+    }
+  }, [apple, resolvedModifier, registry]);
+
+  const [modifierDown, setModifierDown] = React.useState(false);
+
+  React.useEffect(() => {
+    const update = (event: KeyboardEvent) => {
+      if (modifierShortcut)
+        setModifierDown(matchesShortcutModifiers(modifierShortcut, event, apple));
     };
-    const keyup = (event: KeyboardEvent) => {
-      if (modifierShortcut) setModifierDown(matchesShortcutModifiers(modifierShortcut, event));
+    const keydown = (event: KeyboardEvent) => {
+      update(event);
+      registry.dispatch(event);
     };
     const blur = () => setModifierDown(false);
     document.addEventListener('keydown', keydown);
-    document.addEventListener('keyup', keyup);
+    document.addEventListener('keyup', update);
     window.addEventListener('blur', blur);
     return () => {
       document.removeEventListener('keydown', keydown);
-      document.removeEventListener('keyup', keyup);
+      document.removeEventListener('keyup', update);
       window.removeEventListener('blur', blur);
     };
-  }, [registry, modifierShortcut]);
+  }, [registry, modifierShortcut, apple]);
 
   const value = React.useMemo(
-    () => ({ registry, enabled, mnemonicModifier, reveal, modifierDown, apple }),
-    [registry, enabled, mnemonicModifier, reveal, modifierDown, apple],
+    () => ({ registry, enabled, mnemonicModifier: resolvedModifier, reveal, modifierDown, apple }),
+    [registry, enabled, resolvedModifier, reveal, modifierDown, apple],
   );
   return <KeyboundContext.Provider value={value}>{children}</KeyboundContext.Provider>;
 }

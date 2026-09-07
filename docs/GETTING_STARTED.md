@@ -1,6 +1,10 @@
 # Getting started
 
-`react-keybound` is not published yet. Inside this repository, install with `npm ci` and run the live Next.js example with `npm run dev`.
+Install `react-keybound` using your package manager:
+
+```sh
+npm install react-keybound
+```
 
 ## Configure one transform
 
@@ -42,7 +46,7 @@ export function App() {
 }
 ```
 
-The `&` form removes the marker, underlines the following grapheme, and binds the provider's mnemonic modifier (Alt by default). Use `&&` for a literal ampersand. Explicit `hotkey` values use exactly the modifiers written; `mod` means Command on Apple platforms and Control elsewhere.
+The `&` form removes the marker, underlines the following grapheme, and binds the provider's mnemonic modifier (`mnemonicModifier="auto"` by default, which resolves to `Alt+` on Windows/Linux and `⌘` on macOS/iPadOS to avoid Apple Option glyph collisions). Use `&&` for a literal ampersand. Explicit `hotkey` values use exactly the modifiers written; `mod` means Command on Apple platforms and Control elsewhere. Configurable platform mappings (e.g. `mnemonicModifier={{ mac: 'ctrl', windows: 'alt' }}`) are also supported.
 
 The type-only `react-keybound/jsx` import adds the compile-only `hotkey` prop to native JSX typing. It has no runtime code. Components inheriting native button/input props inherit the annotation; otherwise declare the prop locally or use a wrapper/hook.
 

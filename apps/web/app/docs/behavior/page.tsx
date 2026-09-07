@@ -74,11 +74,63 @@ export default function BehaviorPage() {
         <CodeBlock code={eligibilityExample} label="components/form.tsx" />
       </section>
 
+      <section className="space-y-3 pt-4">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="size-4 text-ember" />
+          <h2 className="text-[15px] font-semibold text-ink">
+            Semantic Character Matching &amp; macOS
+          </h2>
+        </div>
+        <p className="text-[13px] text-muted leading-relaxed">
+          Mnemonics are semantic character shortcuts: Keybound matches{' '}
+          <code>KeyboardEvent.key</code>, respecting the user&apos;s active keyboard layout and
+          remapping. It never infers characters from physical key positions (<code>event.code</code>
+          ) or legacy key codes.
+        </p>
+        <p className="text-[13px] text-muted leading-relaxed">
+          On macOS and iPadOS, the Option key acts as an alternative glyph modifier and dead-key
+          composer (e.g. Option+S produces &ldquo;ß&rdquo;, Option+X produces &ldquo;≈&rdquo;, and
+          Option+E produces a dead key). Because Keybound adheres strictly to semantic matching,
+          these glyphs do not match ASCII letters under an <code>alt</code> modifier.
+        </p>
+        <p className="text-[13px] text-muted leading-relaxed">
+          To provide seamless cross-platform ergonomics, <code>&lt;KeyboundProvider&gt;</code>{' '}
+          defaults to <code>mnemonicModifier=&quot;auto&quot;</code>. This automatically resolves to{' '}
+          <code>Alt</code> on Windows and Linux, and <code>mod</code> (⌘ Command) on macOS and
+          iPadOS.
+        </p>
+        <p className="text-[13px] text-muted leading-relaxed">
+          While <code>mod</code> (⌘) provides a native Mac experience, browsers reserve certain
+          shortcuts (such as <code>⌘L</code> for WebKit&apos;s address bar, <code>⌘W</code> to close
+          tabs, and <code>⌘R</code> to reload) that web apps cannot intercept. You can provide a
+          granular platform map to use <code>Control</code> (⌃) on Mac for 100% collision-free
+          accelerators:
+        </p>
+        <div className="font-mono text-[12px] bg-sand/30 border border-stone rounded p-2.5 text-ink">
+          <code>
+            mnemonicModifier=&#123;&#123; mac: &apos;ctrl&apos;, windows: &apos;alt&apos;, linux:
+            &apos;alt&apos; &#125;&#125;
+          </code>
+        </div>
+        <p className="text-[13px] text-muted leading-relaxed">
+          Explicitly configuring <code>mnemonicModifier=&quot;alt&quot;</code> on an Apple platform
+          will emit a development warning (<code>mac-alt-mnemonic</code>), which can be suppressed
+          via the <code>warnings</code> prop.
+        </p>
+      </section>
+
       <div className="rounded-panel border border-border bg-white p-4 space-y-2">
         <span className="text-[12px] font-semibold text-charcoal uppercase tracking-wider">
           Summary of Rules
         </span>
         <ul className="space-y-1.5 text-[12.5px] text-muted">
+          <li className="flex items-center gap-2">
+            <CheckCircle2 className="size-3.5 text-grass flex-none" />
+            <span>
+              Semantic matching via <code>KeyboardEvent.key</code>; physical key codes are never
+              used.
+            </span>
+          </li>
           <li className="flex items-center gap-2">
             <CheckCircle2 className="size-3.5 text-grass flex-none" />
             <span>Deepest active scope wins collisions.</span>
@@ -89,7 +141,10 @@ export default function BehaviorPage() {
           </li>
           <li className="flex items-center gap-2">
             <CheckCircle2 className="size-3.5 text-grass flex-none" />
-            <span>Composition, IME, and repeated keys do not trigger accidental actions.</span>
+            <span>
+              Composition, dead-key, IME, AltGraph, and repeated keys do not trigger accidental
+              actions.
+            </span>
           </li>
         </ul>
       </div>

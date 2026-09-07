@@ -1,13 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { KeyboundProvider, Mnemonic, Hotkey, KeyboundScope } from 'react-keybound';
+import {
+  KeyboundProvider,
+  Mnemonic,
+  Hotkey,
+  KeyboundScope,
+  useKeyboundContext,
+} from 'react-keybound';
+import { formatShortcut } from 'react-keybound/core';
 import {
   Check,
   Copy,
   CheckCircle2,
   Shield,
-  Zap,
   Loader2,
   FileText,
   Cloud,
@@ -77,25 +83,28 @@ function useTransitionPresence(isOpen: boolean, duration = 220) {
 }
 
 function CardsInner() {
-  // Card 1: Realistic File Export states
-  const [exportStatus, setExportStatus] = React.useState<'idle' | 'exporting' | 'completed'>(
-    'idle',
-  );
-  const [exportProgress, setExportProgress] = React.useState(0);
+  const { apple, mnemonicModifier } = useKeyboundContext();
+  const printKey = formatShortcut(`${mnemonicModifier}+p`, apple);
+  const autosaveShortcut = apple ? 'mod+shift+a' : 'alt+a';
+  const autosaveKey = formatShortcut(autosaveShortcut, apple);
 
-  const triggerExport = React.useCallback(() => {
-    if (exportStatus === 'exporting') return;
-    setExportStatus('exporting');
-    setExportProgress(20);
+  // Card 1: Realistic File Print states
+  const [printStatus, setPrintStatus] = React.useState<'idle' | 'printing' | 'completed'>('idle');
+  const [printProgress, setPrintProgress] = React.useState(0);
 
-    const t1 = setTimeout(() => setExportProgress(65), 250);
-    const t2 = setTimeout(() => setExportProgress(100), 550);
+  const triggerPrint = React.useCallback(() => {
+    if (printStatus === 'printing') return;
+    setPrintStatus('printing');
+    setPrintProgress(20);
+
+    const t1 = setTimeout(() => setPrintProgress(65), 250);
+    const t2 = setTimeout(() => setPrintProgress(100), 550);
     const t3 = setTimeout(() => {
-      setExportStatus('completed');
+      setPrintStatus('completed');
     }, 800);
     const t4 = setTimeout(() => {
-      setExportStatus('idle');
-      setExportProgress(0);
+      setPrintStatus('idle');
+      setPrintProgress(0);
     }, 2800);
 
     return () => {
@@ -104,7 +113,7 @@ function CardsInner() {
       clearTimeout(t3);
       clearTimeout(t4);
     };
-  }, [exportStatus]);
+  }, [printStatus]);
 
   // Card 2: Realistic Cloud Sync & Autosave states
   const [toggleState, setToggleState] = React.useState(true);
@@ -125,28 +134,7 @@ function CardsInner() {
     modalOpen,
     220,
   );
-  const [blockedKey, setBlockedKey] = React.useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
-
-  React.useEffect(() => {
-    if (!modalOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault();
-        setModalOpen(false);
-        return;
-      }
-      // Demonstrate live modal keyboard isolation:
-      // Background shortcuts (Alt+X, Alt+A) are suppressed by the scope
-      if (e.altKey && (e.key === 'x' || e.key === 'X' || e.key === 'a' || e.key === 'A')) {
-        e.preventDefault();
-        setBlockedKey(`Alt+${e.key.toUpperCase()}`);
-        setTimeout(() => setBlockedKey(null), 1600);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [modalOpen]);
 
   const handleConfirmModal = () => {
     setConfirmStatus('saving');
@@ -194,34 +182,34 @@ function CardsInner() {
 
             <div className="space-y-1.5 my-auto">
               <div className="flex items-center justify-between gap-2">
-                <Mnemonic text="E&xport">
+                <Mnemonic text="&Print">
                   <button
-                    onClick={triggerExport}
-                    disabled={exportStatus === 'exporting'}
+                    onClick={triggerPrint}
+                    disabled={printStatus === 'printing'}
                     className={`btn btn--quiet btn--sm font-medium transition-all duration-150 flex items-center gap-1.5 ${
-                      exportStatus === 'exporting' ? 'opacity-90 cursor-wait' : ''
+                      printStatus === 'printing' ? 'opacity-90 cursor-wait' : ''
                     }`}
                   >
-                    {exportStatus === 'exporting' ? (
+                    {printStatus === 'printing' ? (
                       <>
                         <Loader2 className="size-3 animate-spin text-ember" />
-                        <span>Exporting...</span>
+                        <span>Printing...</span>
                       </>
-                    ) : exportStatus === 'completed' ? (
+                    ) : printStatus === 'completed' ? (
                       <>
                         <Check className="size-3 text-grass" />
-                        <span>Exported</span>
+                        <span>Printed</span>
                       </>
                     ) : (
-                      'Export'
+                      'Print'
                     )}
                   </button>
                 </Mnemonic>
 
                 <span className="text-[10px] font-mono text-muted">
-                  {exportStatus === 'exporting'
-                    ? `${exportProgress}%`
-                    : exportStatus === 'completed'
+                  {printStatus === 'printing'
+                    ? `${printProgress}%`
+                    : printStatus === 'completed'
                       ? '100%'
                       : ''}
                 </span>
@@ -230,30 +218,30 @@ function CardsInner() {
               <div className="w-full h-1.5 rounded-full bg-stone overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ease-out rounded-full ${
-                    exportStatus === 'completed'
+                    printStatus === 'completed'
                       ? 'bg-grass w-full'
-                      : exportStatus === 'exporting'
+                      : printStatus === 'printing'
                         ? 'bg-ember'
                         : 'bg-transparent w-0'
                   }`}
-                  style={exportStatus === 'exporting' ? { width: `${exportProgress}%` } : undefined}
+                  style={printStatus === 'printing' ? { width: `${printProgress}%` } : undefined}
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-between text-[10px] font-mono border-t border-stone/80 pt-1.5">
-              {exportStatus === 'completed' ? (
+              {printStatus === 'completed' ? (
                 <span className="inline-flex items-center gap-1 text-grass font-medium animate-in fade-in duration-150">
-                  <CheckCircle2 className="size-3" /> Ready for download
+                  <CheckCircle2 className="size-3" /> Job queued for printer
                 </span>
-              ) : exportStatus === 'exporting' ? (
+              ) : printStatus === 'printing' ? (
                 <span className="inline-flex items-center gap-1 text-ember font-medium">
-                  <Loader2 className="size-2.5 animate-spin" /> Compiling document stream...
+                  <Loader2 className="size-2.5 animate-spin" /> Spooling print job...
                 </span>
               ) : (
                 <div className="flex items-center justify-between w-full text-muted">
                   <span>Click or press</span>
-                  <kbd className="kbd-badge text-[9.5px]">Alt+X</kbd>
+                  <kbd className="kbd-badge text-[9.5px]">{printKey}</kbd>
                 </div>
               )}
             </div>
@@ -261,11 +249,11 @@ function CardsInner() {
 
           <div className="flex flex-col flex-1 justify-between gap-2.5 text-center pt-1">
             <div className="flex justify-center h-7 items-center">
-              <CopyableSnippet code="<button>E&xport</button>" />
+              <CopyableSnippet code="<button>&Print</button>" />
             </div>
             <p className="text-[12px] text-muted leading-relaxed min-h-[44px] flex items-center justify-center gap-1 flex-wrap">
               <span>Press</span>
-              <kbd className="kbd-badge text-[10px]">Alt+X</kbd>
+              <kbd className="kbd-badge text-[10px]">{printKey}</kbd>
               <span>to trigger without breaking natural word flow.</span>
             </p>
           </div>
@@ -298,13 +286,13 @@ function CardsInner() {
                 <span className="text-[12px] font-medium text-charcoal">Autosave revisions</span>
                 <span className="text-[10px] text-muted">Automatic snapshot on change</span>
               </div>
-              <Hotkey keys="alt+a" label="Autosave toggle">
+              <Hotkey keys={autosaveShortcut} label="Autosave toggle" allowInInput>
                 <button
                   role="switch"
                   aria-checked={toggleState}
                   onClick={handleToggleSync}
                   className="tactile-switch transition-transform active:scale-95 cursor-pointer"
-                  title="Toggle autosave with Alt+A"
+                  title={`Toggle autosave with ${autosaveKey}`}
                 >
                   <span className="knob" />
                 </button>
@@ -324,7 +312,7 @@ function CardsInner() {
               ) : (
                 <div className="flex items-center justify-between w-full text-muted">
                   <span>Offline mode (local only)</span>
-                  <kbd className="kbd-badge text-[9.5px]">Alt+A</kbd>
+                  <kbd className="kbd-badge text-[9.5px]">{autosaveKey}</kbd>
                 </div>
               )}
             </div>
@@ -332,11 +320,11 @@ function CardsInner() {
 
           <div className="flex flex-col flex-1 justify-between gap-2.5 text-center pt-1">
             <div className="flex justify-center h-7 items-center">
-              <CopyableSnippet code='hotkey="alt+a"' />
+              <CopyableSnippet code={`hotkey="${autosaveShortcut}"`} />
             </div>
             <p className="text-[12px] text-muted leading-relaxed min-h-[44px] flex items-center justify-center gap-1 flex-wrap">
               <span>Press</span>
-              <kbd className="kbd-badge text-[10px]">Alt+A</kbd>
+              <kbd className="kbd-badge text-[10px]">{autosaveKey}</kbd>
               <span>to toggle custom switches or native inputs.</span>
             </p>
           </div>
@@ -414,17 +402,12 @@ function CardsInner() {
                     </div>
 
                     <div className="py-1">
-                      {blockedKey ? (
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-ember bg-sand px-1.5 py-1 rounded border border-ember/30 animate-pulse">
-                          <Zap className="size-3 shrink-0" />
-                          <span>{blockedKey} suppressed by scope!</span>
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-muted leading-tight">
-                          Try pressing <kbd className="kbd-badge text-[8.5px]">Alt+X</kbd> or{' '}
-                          <kbd className="kbd-badge text-[8.5px]">Alt+A</kbd>
-                        </p>
-                      )}
+                      <p className="text-[10px] text-muted leading-tight">
+                        Background shortcuts (
+                        <kbd className="kbd-badge text-[8.5px]">{printKey}</kbd>,{' '}
+                        <kbd className="kbd-badge text-[8.5px]">{autosaveKey}</kbd>) are blocked by
+                        the modal scope.
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-stone">

@@ -84,29 +84,27 @@ function useTransitionPresence(isOpen: boolean, duration = 220) {
 
 function CardsInner() {
   const { apple, mnemonicModifier } = useKeyboundContext();
-  const exportKey = formatShortcut(`${mnemonicModifier}+x`, apple);
+  const printKey = formatShortcut(`${mnemonicModifier}+p`, apple);
   const autosaveShortcut = apple ? 'mod+shift+a' : 'alt+a';
   const autosaveKey = formatShortcut(autosaveShortcut, apple);
 
-  // Card 1: Realistic File Export states
-  const [exportStatus, setExportStatus] = React.useState<'idle' | 'exporting' | 'completed'>(
-    'idle',
-  );
-  const [exportProgress, setExportProgress] = React.useState(0);
+  // Card 1: Realistic File Print states
+  const [printStatus, setPrintStatus] = React.useState<'idle' | 'printing' | 'completed'>('idle');
+  const [printProgress, setPrintProgress] = React.useState(0);
 
-  const triggerExport = React.useCallback(() => {
-    if (exportStatus === 'exporting') return;
-    setExportStatus('exporting');
-    setExportProgress(20);
+  const triggerPrint = React.useCallback(() => {
+    if (printStatus === 'printing') return;
+    setPrintStatus('printing');
+    setPrintProgress(20);
 
-    const t1 = setTimeout(() => setExportProgress(65), 250);
-    const t2 = setTimeout(() => setExportProgress(100), 550);
+    const t1 = setTimeout(() => setPrintProgress(65), 250);
+    const t2 = setTimeout(() => setPrintProgress(100), 550);
     const t3 = setTimeout(() => {
-      setExportStatus('completed');
+      setPrintStatus('completed');
     }, 800);
     const t4 = setTimeout(() => {
-      setExportStatus('idle');
-      setExportProgress(0);
+      setPrintStatus('idle');
+      setPrintProgress(0);
     }, 2800);
 
     return () => {
@@ -115,7 +113,7 @@ function CardsInner() {
       clearTimeout(t3);
       clearTimeout(t4);
     };
-  }, [exportStatus]);
+  }, [printStatus]);
 
   // Card 2: Realistic Cloud Sync & Autosave states
   const [toggleState, setToggleState] = React.useState(true);
@@ -184,34 +182,34 @@ function CardsInner() {
 
             <div className="space-y-1.5 my-auto">
               <div className="flex items-center justify-between gap-2">
-                <Mnemonic text="E&xport">
+                <Mnemonic text="&Print">
                   <button
-                    onClick={triggerExport}
-                    disabled={exportStatus === 'exporting'}
+                    onClick={triggerPrint}
+                    disabled={printStatus === 'printing'}
                     className={`btn btn--quiet btn--sm font-medium transition-all duration-150 flex items-center gap-1.5 ${
-                      exportStatus === 'exporting' ? 'opacity-90 cursor-wait' : ''
+                      printStatus === 'printing' ? 'opacity-90 cursor-wait' : ''
                     }`}
                   >
-                    {exportStatus === 'exporting' ? (
+                    {printStatus === 'printing' ? (
                       <>
                         <Loader2 className="size-3 animate-spin text-ember" />
-                        <span>Exporting...</span>
+                        <span>Printing...</span>
                       </>
-                    ) : exportStatus === 'completed' ? (
+                    ) : printStatus === 'completed' ? (
                       <>
                         <Check className="size-3 text-grass" />
-                        <span>Exported</span>
+                        <span>Printed</span>
                       </>
                     ) : (
-                      'Export'
+                      'Print'
                     )}
                   </button>
                 </Mnemonic>
 
                 <span className="text-[10px] font-mono text-muted">
-                  {exportStatus === 'exporting'
-                    ? `${exportProgress}%`
-                    : exportStatus === 'completed'
+                  {printStatus === 'printing'
+                    ? `${printProgress}%`
+                    : printStatus === 'completed'
                       ? '100%'
                       : ''}
                 </span>
@@ -220,30 +218,30 @@ function CardsInner() {
               <div className="w-full h-1.5 rounded-full bg-stone overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ease-out rounded-full ${
-                    exportStatus === 'completed'
+                    printStatus === 'completed'
                       ? 'bg-grass w-full'
-                      : exportStatus === 'exporting'
+                      : printStatus === 'printing'
                         ? 'bg-ember'
                         : 'bg-transparent w-0'
                   }`}
-                  style={exportStatus === 'exporting' ? { width: `${exportProgress}%` } : undefined}
+                  style={printStatus === 'printing' ? { width: `${printProgress}%` } : undefined}
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-between text-[10px] font-mono border-t border-stone/80 pt-1.5">
-              {exportStatus === 'completed' ? (
+              {printStatus === 'completed' ? (
                 <span className="inline-flex items-center gap-1 text-grass font-medium animate-in fade-in duration-150">
-                  <CheckCircle2 className="size-3" /> Ready for download
+                  <CheckCircle2 className="size-3" /> Job queued for printer
                 </span>
-              ) : exportStatus === 'exporting' ? (
+              ) : printStatus === 'printing' ? (
                 <span className="inline-flex items-center gap-1 text-ember font-medium">
-                  <Loader2 className="size-2.5 animate-spin" /> Compiling document stream...
+                  <Loader2 className="size-2.5 animate-spin" /> Spooling print job...
                 </span>
               ) : (
                 <div className="flex items-center justify-between w-full text-muted">
                   <span>Click or press</span>
-                  <kbd className="kbd-badge text-[9.5px]">{exportKey}</kbd>
+                  <kbd className="kbd-badge text-[9.5px]">{printKey}</kbd>
                 </div>
               )}
             </div>
@@ -251,11 +249,11 @@ function CardsInner() {
 
           <div className="flex flex-col flex-1 justify-between gap-2.5 text-center pt-1">
             <div className="flex justify-center h-7 items-center">
-              <CopyableSnippet code="<button>E&xport</button>" />
+              <CopyableSnippet code="<button>&Print</button>" />
             </div>
             <p className="text-[12px] text-muted leading-relaxed min-h-[44px] flex items-center justify-center gap-1 flex-wrap">
               <span>Press</span>
-              <kbd className="kbd-badge text-[10px]">{exportKey}</kbd>
+              <kbd className="kbd-badge text-[10px]">{printKey}</kbd>
               <span>to trigger without breaking natural word flow.</span>
             </p>
           </div>
@@ -406,7 +404,7 @@ function CardsInner() {
                     <div className="py-1">
                       <p className="text-[10px] text-muted leading-tight">
                         Background shortcuts (
-                        <kbd className="kbd-badge text-[8.5px]">{exportKey}</kbd>,{' '}
+                        <kbd className="kbd-badge text-[8.5px]">{printKey}</kbd>,{' '}
                         <kbd className="kbd-badge text-[8.5px]">{autosaveKey}</kbd>) are blocked by
                         the modal scope.
                       </p>

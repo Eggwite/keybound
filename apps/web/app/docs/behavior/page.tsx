@@ -100,8 +100,11 @@ export default function BehaviorPage() {
           iPadOS.
         </p>
         <p className="text-[13px] text-muted leading-relaxed">
-          You can also provide a granular platform map if you wish to use <code>Control</code> (⌃)
-          on Mac to avoid browser-reserved Command shortcuts:
+          While <code>mod</code> (⌘) provides a native Mac experience, browsers reserve certain
+          shortcuts (such as <code>⌘L</code> for WebKit&apos;s address bar, <code>⌘W</code> to close
+          tabs, and <code>⌘R</code> to reload) that web apps cannot intercept. You can provide a
+          granular platform map to use <code>Control</code> (⌃) on Mac for 100% collision-free
+          accelerators:
         </p>
         <div className="font-mono text-[12px] bg-sand/30 border border-stone rounded p-2.5 text-ink">
           <code>

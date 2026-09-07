@@ -10,6 +10,7 @@ import {
   useHotkey,
   useKeyboundContext,
 } from 'react-keybound';
+import { formatShortcut } from 'react-keybound/core';
 import { Crosshair, Search, Terminal, X, ArrowDown } from 'lucide-react';
 import type {} from 'react-keybound/jsx';
 
@@ -35,11 +36,11 @@ function StudioCues({
   triggerEvent: (id: string, key: string, type: 'mnemonic' | 'hotkey', target: string) => void;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
-  const { apple } = useKeyboundContext();
-  const saveKey = apple ? '⌘S' : 'Alt+S';
-  const exportKey = apple ? '⌘X' : 'Alt+X';
-  const reloadKey = apple ? '⌘L' : 'Alt+L';
-  const findKey = apple ? '⌘K' : 'Ctrl+K';
+  const { mnemonicModifier, apple } = useKeyboundContext();
+  const saveKey = formatShortcut(`${mnemonicModifier}+s`, apple);
+  const exportKey = formatShortcut(`${mnemonicModifier}+x`, apple);
+  const resetKey = formatShortcut(`${mnemonicModifier}+e`, apple);
+  const findKey = formatShortcut('mod+k', apple);
 
   const executeSave = React.useCallback(() => {
     searchInputRef.current?.blur();
@@ -49,7 +50,7 @@ function StudioCues({
     searchInputRef.current?.blur();
   }, [searchInputRef]);
 
-  const executeReload = React.useCallback(() => {
+  const executeReset = React.useCallback(() => {
     searchInputRef.current?.blur();
   }, [searchInputRef]);
 
@@ -69,18 +70,22 @@ function StudioCues({
     },
   });
 
-  const reloadMnemonic = useMnemonic('Re&load state', {
+  const resetMnemonic = useMnemonic('Res&et state', {
     allowInInput: true,
     action: (_element, _event) => {
-      executeReload();
-      triggerEvent('reload', reloadKey, 'mnemonic', 'button[Reload]');
+      executeReset();
+      triggerEvent('reset', resetKey, 'mnemonic', 'button[Reset]');
     },
   });
 
-  useHotkey('mod+k', () => {
-    searchInputRef.current?.focus();
-    triggerEvent('find', findKey, 'hotkey', 'input[search]');
-  });
+  useHotkey(
+    'mod+k',
+    () => {
+      searchInputRef.current?.focus();
+      triggerEvent('find', findKey, 'hotkey', 'input[search]');
+    },
+    { targetRef: searchInputRef, label: 'Quick find', allowInInput: true },
+  );
 
   return (
     <div className="space-y-1.5">
@@ -117,19 +122,19 @@ function StudioCues({
       </button>
 
       <button
-        ref={reloadMnemonic.triggerProps.ref}
-        aria-keyshortcuts={reloadMnemonic.triggerProps['aria-keyshortcuts']}
+        ref={resetMnemonic.triggerProps.ref}
+        aria-keyshortcuts={resetMnemonic.triggerProps['aria-keyshortcuts']}
         data-keybound="mnemonic"
-        onClick={executeReload}
-        className={`studio-cue ${activeCueId === 'reload' ? 'studio-cue--active studio-cue--grass' : ''}`}
+        onClick={executeReset}
+        className={`studio-cue ${activeCueId === 'reset' ? 'studio-cue--active studio-cue--grass' : ''}`}
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="flex-none flex items-center justify-center size-3 overflow-visible">
             <span className="cue-dot size-1.5 rounded-full bg-grass transition-transform duration-150" />
           </span>
-          <span className="truncate">{reloadMnemonic.label}</span>
+          <span className="truncate">{resetMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">{reloadKey}</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{resetKey}</span>
       </button>
 
       <div
@@ -157,6 +162,7 @@ function StudioCues({
 
 export function KeyboundStudio() {
   const [revealMode, setRevealMode] = React.useState<'always' | 'modifier' | 'never'>('always');
+  const [modifierSetting, setModifierSetting] = React.useState<'auto' | 'ctrl' | 'alt'>('auto');
   const [showOverlay, setShowOverlay] = React.useState(false);
   const [activeCueId, setActiveCueId] = React.useState<string | null>(null);
   const [events, setEvents] = React.useState<DispatchRecord[]>([]);
@@ -198,7 +204,7 @@ export function KeyboundStudio() {
   );
 
   return (
-    <KeyboundProvider reveal={revealMode}>
+    <KeyboundProvider reveal={revealMode} mnemonicModifier={modifierSetting}>
       <div className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden rounded-card border border-border bg-white shadow-lift relative h-100">
           <div className="absolute top-2.5 left-2.5 pointer-events-none opacity-20">
@@ -261,7 +267,7 @@ export function KeyboundStudio() {
                                 ? 'bg-ember'
                                 : ev.key.toLowerCase().includes('+x')
                                   ? 'bg-blue'
-                                  : ev.key.toLowerCase().includes('+l')
+                                  : ev.key.toLowerCase().includes('+e')
                                     ? 'bg-grass'
                                     : 'bg-violet'
                             }`}
@@ -315,7 +321,7 @@ export function KeyboundStudio() {
                             : 'text-muted hover:text-charcoal'
                         }`}
                       >
-                        {m === 'modifier' ? 'alt' : m}
+                        {m === 'modifier' ? 'hold mod' : m}
                       </button>
                     ))}
                   </div>
@@ -333,9 +339,21 @@ export function KeyboundStudio() {
 
                 <div className="inspector-row">
                   <span className="font-medium text-charcoal">Modifier</span>
-                  <span className="font-mono text-[10.5px] text-muted bg-stone px-1.5 py-0.5 rounded border border-border">
-                    Alt / Option
-                  </span>
+                  <div className="flex items-center gap-0.5 bg-stone p-0.5 rounded-[5px] text-[10.5px]">
+                    {(['auto', 'ctrl', 'alt'] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setModifierSetting(m)}
+                        className={`px-1.5 py-0.5 rounded-[4px] uppercase cursor-pointer transition-all ${
+                          modifierSetting === m
+                            ? 'bg-white font-semibold text-ink shadow-xs'
+                            : 'text-muted hover:text-charcoal'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -381,12 +399,8 @@ export function KeyboundStudio() {
                 </div>
 
                 <p className="text-[12px] text-charcoal leading-relaxed">
-                  While this modal scope is active, background shortcuts (
-                  <span className="font-mono text-[10.5px] bg-stone px-1 py-0.5 rounded">
-                    Alt+S
-                  </span>
-                  , <span className="font-mono text-[10.5px] bg-stone px-1 py-0.5 rounded">⌘K</span>
-                  ) are automatically suppressed by the dispatcher.
+                  While this modal scope is active, background shortcuts are automatically
+                  suppressed by the dispatcher.
                 </p>
 
                 <div className="flex items-center justify-between pt-1">

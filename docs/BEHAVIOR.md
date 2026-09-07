@@ -25,7 +25,7 @@ To provide desktop-grade keyboard intent across operating systems with zero deve
 
 ### Platform Mapping & Browser Shortcuts
 
-While `mod` (`⌘`) provides a native Mac experience, browsers reserve select shortcuts (e.g. `⌘W`, `⌘N`, `⌘T`) that web apps cannot preventDefault. If you require complete isolation from browser shortcuts on Mac, configure an explicit platform map using `Control` (`⌃`), which is 100% collision-free:
+While `mod` (`⌘`) provides a native Mac experience, browsers reserve select shortcuts (e.g. `⌘L` for the address bar, `⌘W` to close tabs, `⌘T` for new tabs, `⌘R` to reload) that web apps cannot reliably preventDefault or intercept in WebKit/Safari. If you require complete isolation from browser-reserved shortcuts on Mac or need to bind letters that browsers reserve, configure an explicit platform map using `Control` (`⌃`), which is 100% collision-free:
 
 ```tsx
 <KeyboundProvider

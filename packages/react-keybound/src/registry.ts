@@ -1,6 +1,7 @@
 import { matchesShortcut, parseShortcut, type Shortcut } from './core';
 
-export type WarningCode = 'invalid-shortcut' | 'collision' | 'missing-target' | 'invalid-mnemonic';
+export type WarningCode =
+  'invalid-shortcut' | 'collision' | 'missing-target' | 'invalid-mnemonic' | 'mac-alt-mnemonic';
 export type KeyboundWarning = { code: WarningCode; message: string; keys?: string; label?: string };
 export type WarningSetting = boolean | Partial<Record<WarningCode, boolean>> | undefined;
 export type Action =
@@ -353,20 +354,38 @@ export class KeyboundRegistry {
   }
 
   private warn(binding: Binding, code: WarningCode, message: string): void {
-    const setting = binding.options.warnings ?? this.config.warnings;
-    const viteDevelopment = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV;
-    const development =
-      (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') ||
-      viteDevelopment === true;
+    this.emitWarning(
+      code,
+      message,
+      binding.options.warnings ?? this.config.warnings,
+      binding.shortcut?.source,
+      binding.options.label,
+      `${code}:${binding.options.label ?? ''}:${binding.shortcut?.source ?? binding.mnemonicKey ?? ''}`,
+    );
+  }
+
+  warnGlobal(code: WarningCode, message: string): void {
+    this.emitWarning(code, message, this.config.warnings, undefined, undefined, code);
+  }
+
+  private emitWarning(
+    code: WarningCode,
+    message: string,
+    setting: WarningSetting,
+    keys?: string,
+    label?: string,
+    dedupeKey: string = code,
+  ): void {
+    const viteDev = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV;
+    const dev =
+      (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') || viteDev === true;
     const allowed =
       setting === true ||
       (typeof setting === 'object' && setting[code] === true) ||
-      (setting === undefined && development);
-    if (!allowed) return;
-    const key = `${code}:${binding.options.label ?? ''}:${binding.shortcut?.source ?? binding.mnemonicKey ?? ''}`;
-    if (this.warned.has(key)) return;
-    this.warned.add(key);
-    const warning = { code, message, keys: binding.shortcut?.source, label: binding.options.label };
+      (setting === undefined && dev);
+    if (!allowed || this.warned.has(dedupeKey)) return;
+    this.warned.add(dedupeKey);
+    const warning: KeyboundWarning = { code, message, keys, label };
     if (this.config.onWarning) this.config.onWarning(warning);
     else if (typeof console !== 'undefined') console.warn(`[keybound:${code}] ${message}`);
   }

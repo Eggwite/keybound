@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { formatShortcut, parseShortcut } from './core';
+import { formatShortcut } from './core';
 import { type Command } from './registry';
 import { useKeyboundContext } from './provider';
 
@@ -82,19 +82,7 @@ export function KeyboundHelp({
             renderItem(command)
           ) : (
             <>
-              <kbd>
-                {formatShortcut(
-                  parseShortcut(command.keys) ?? {
-                    key: command.keys,
-                    ctrl: false,
-                    alt: false,
-                    shift: false,
-                    meta: false,
-                    mod: false,
-                    source: command.keys,
-                  },
-                )}
-              </kbd>
+              <kbd>{formatShortcut(command.keys)}</kbd>
               {command.label ? ` ${command.label}` : null}
             </>
           )}

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { formatShortcut, parseShortcut } from './core';
+import { formatShortcut } from './core';
 import { useKeyboundContext } from './provider';
 
 type Hint = {
@@ -98,23 +98,7 @@ export function KeyboundOverlay({
           data-keybound-overlay-hint=""
           style={{ position: 'fixed', top: hint.top, left: hint.left }}
         >
-          {renderHint ? (
-            renderHint(hint)
-          ) : (
-            <kbd>
-              {formatShortcut(
-                parseShortcut(hint.keys) ?? {
-                  key: hint.keys,
-                  ctrl: false,
-                  alt: false,
-                  shift: false,
-                  meta: false,
-                  mod: false,
-                  source: hint.keys,
-                },
-              )}
-            </kbd>
-          )}
+          {renderHint ? renderHint(hint) : <kbd>{formatShortcut(hint.keys)}</kbd>}
         </span>
       ))}
     </div>,

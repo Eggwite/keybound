@@ -63,8 +63,8 @@ export function App() {
 
   return (
 
-    // Configure reveal mode and mnemonic modifier chord
-    <KeyboundProvider reveal="modifier" mnemonicModifier="alt">
+    // Configure reveal mode and platform-aware mnemonic modifier
+    <KeyboundProvider reveal="modifier" mnemonicModifier="auto">
 
       {/* Renders floating shortcut badges over eligible elements */}
       <KeyboundOverlay open={hintsOpen} />

@@ -140,9 +140,28 @@ function isShortcutKey(value: string): boolean {
 export function isApplePlatform(): boolean {
   if (typeof navigator === 'undefined') return false;
   const browser = navigator as Navigator & { userAgentData?: { platform?: string } };
-  return /mac|iphone|ipad|ipod/i.test(
-    browser.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent,
-  );
+  const platform = browser.userAgentData?.platform ?? navigator.platform ?? '';
+  const userAgent = navigator.userAgent ?? '';
+  return /mac|iphone|ipad|ipod/i.test(`${platform} ${userAgent}`);
+}
+
+export type PlatformModifierMap = {
+  mac?: string;
+  windows?: string;
+  linux?: string;
+  default?: string;
+};
+
+export type MnemonicModifierSetting = 'auto' | string | PlatformModifierMap;
+
+export function resolveMnemonicModifier(
+  setting: MnemonicModifierSetting = 'auto',
+  apple = isApplePlatform(),
+): string {
+  if (setting === 'auto') return apple ? 'mod' : 'alt';
+  if (typeof setting === 'string') return setting;
+  if (apple) return setting.mac ?? 'mod';
+  return setting.windows ?? setting.linux ?? setting.default ?? 'alt';
 }
 
 export function matchesShortcut(
@@ -172,13 +191,15 @@ export function matchesShortcutModifiers(
   );
 }
 
-export function formatShortcut(shortcut: Shortcut, apple = isApplePlatform()): string {
+export function formatShortcut(shortcut: Shortcut | string, apple = isApplePlatform()): string {
+  const item = typeof shortcut === 'string' ? parseShortcut(shortcut) : shortcut;
+  if (!item) return typeof shortcut === 'string' ? shortcut : '';
   const parts: string[] = [];
-  if (shortcut.ctrl || (shortcut.mod && !apple)) parts.push('Ctrl');
-  if (shortcut.alt) parts.push('Alt');
-  if (shortcut.shift) parts.push('Shift');
-  if (shortcut.meta || (shortcut.mod && apple)) parts.push(apple ? '⌘' : 'Meta');
-  parts.push(shortcut.key.length === 1 ? shortcut.key.toUpperCase() : displayKey(shortcut.key));
+  if (item.ctrl || (item.mod && !apple)) parts.push('Ctrl');
+  if (item.alt) parts.push('Alt');
+  if (item.shift) parts.push('Shift');
+  if (item.meta || (item.mod && apple)) parts.push(apple ? '⌘' : 'Meta');
+  parts.push(item.key.length === 1 ? item.key.toUpperCase() : displayKey(item.key));
   return parts.join(apple ? '' : '+');
 }
 
@@ -188,7 +209,7 @@ export function formatAriaShortcut(shortcut: Shortcut, apple = false): string {
   if (shortcut.alt) parts.push('Alt');
   if (shortcut.shift) parts.push('Shift');
   if (shortcut.meta || (shortcut.mod && apple)) parts.push('Meta');
-  parts.push(ariaKey(shortcut.key));
+  parts.push(displayKey(shortcut.key));
   return parts.join('+');
 }
 
@@ -212,9 +233,4 @@ function displayKey(key: string): string {
     insert: 'Insert',
   };
   return names[key] ?? key.toUpperCase();
-}
-
-function ariaKey(key: string): string {
-  if (key.length === 1) return key.toUpperCase();
-  return displayKey(key);
 }

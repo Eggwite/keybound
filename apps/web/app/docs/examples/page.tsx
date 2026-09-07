@@ -12,6 +12,7 @@ import {
   useMnemonic,
   useHotkey,
   useKeyboundCommands,
+  useKeyboundContext,
 } from 'react-keybound';
 import { CodeBlock } from '@/components/code-block';
 import {
@@ -348,6 +349,11 @@ function useTransitionPresence(isOpen: boolean, duration = 220) {
 }
 
 function ExamplesContent() {
+  const { apple } = useKeyboundContext();
+  const saveKey = apple ? '⌘S' : 'Alt+S';
+  const exportKey = apple ? '⌘X' : 'Alt+X';
+  const closeKey = apple ? '⌘C' : 'Alt+C';
+
   // Demo states
   const [feedback, setFeedback] = React.useState<{ [key: string]: boolean }>({});
   const [buttonStates, setButtonStates] = React.useState<{
@@ -377,15 +383,14 @@ function ExamplesContent() {
       setTimeout(() => {
         setButtonStates((prev) => ({ ...prev, [id]: 'idle' }));
         setFeedback((prev) => ({ ...prev, [id]: false }));
-      }, 1400);
-    }, 350);
+      }, 1500);
+    }, 400);
   };
 
-  // Headless hotkey demo
+  // Section 5: Headless shortcut
   useHotkey(
     'mod+s',
-    (e) => {
-      e.preventDefault();
+    () => {
       setHeadlessCounter((c) => c + 1);
       fire('headless-save', 'Headless Save (⌘S / Ctrl+S)');
     },
@@ -408,23 +413,23 @@ function ExamplesContent() {
       <section className="space-y-4">
         <SectionHeading
           title="JSX Mnemonics & Letter Positioning"
-          description="Use & anywhere in button or label text. The compiler automatically transforms it into an underlined mnemonic with Alt+* keyboard intent."
+          description="Use & anywhere in button or label text. The compiler automatically transforms it into an underlined mnemonic with platform-aware keyboard intent."
           icon={Command}
         />
 
         <div className="p-4 rounded-card bg-white border border-border shadow-lift space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <Mnemonic text="&Save" action={() => fire('save', 'Saved with Alt+S')}>
+            <Mnemonic text="&Save" action={() => fire('save', `Saved with ${saveKey}`)}>
               <button className="btn btn--orange btn--sm flex items-center gap-1.5">Save</button>
             </Mnemonic>
 
-            <Mnemonic text="E&xport" action={() => fire('export', 'Exported with Alt+X')}>
+            <Mnemonic text="E&xport" action={() => fire('export', `Exported with ${exportKey}`)}>
               <button className="btn btn--quiet btn--sm flex items-center gap-1.5">Export</button>
             </Mnemonic>
 
             <Mnemonic
               text="Save && &Close"
-              action={() => fire('close', 'Saved & Closed with Alt+C')}
+              action={() => fire('close', `Saved & Closed with ${closeKey}`)}
             >
               <button className="btn btn--quiet btn--sm flex items-center gap-1.5">
                 Save && Close
@@ -433,18 +438,21 @@ function ExamplesContent() {
           </div>
 
           <div className="flex items-center gap-3 min-h-[22px]">
-            <FeedbackBadge status={feedback.save ? 'fired' : 'idle'} message="Alt+S dispatched!" />
+            <FeedbackBadge
+              status={feedback.save ? 'fired' : 'idle'}
+              message={`${saveKey} dispatched!`}
+            />
             <FeedbackBadge
               status={feedback.export ? 'fired' : 'idle'}
-              message="Alt+X dispatched!"
+              message={`${exportKey} dispatched!`}
             />
             <FeedbackBadge
               status={feedback.close ? 'fired' : 'idle'}
-              message="Alt+C dispatched (&& decoded)!"
+              message={`${closeKey} dispatched (&& decoded)!`}
             />
             {!feedback.save && !feedback.export && !feedback.close && (
               <span className="text-[11px] text-muted font-mono">
-                Press Alt+S, Alt+X, or Alt+C to test live activation.
+                Press {saveKey}, {exportKey}, or {closeKey} to test live activation.
               </span>
             )}
           </div>

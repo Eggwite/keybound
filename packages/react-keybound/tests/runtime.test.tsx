@@ -435,4 +435,71 @@ describe('runtime dispatch', () => {
     expect(mnemonic?.textContent).toBe('x');
     expect(keydown({ key: 'x', altKey: true })).toBe(false);
   });
+
+  it('resolves mnemonicModifier auto to mod on Apple platforms and triggers with metaKey', () => {
+    const originalUserAgent = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      configurable: true,
+    });
+    const save = vi.fn();
+    const onWarning = vi.fn();
+    try {
+      render(
+        <KeyboundProvider onWarning={onWarning}>
+          <Mnemonic text="&Save">
+            <button onClick={save}>Save</button>
+          </Mnemonic>
+        </KeyboundProvider>,
+      );
+      // Under auto on Mac, mod resolves to metaKey (⌘)
+      expect(keydown({ key: 's', metaKey: true })).toBe(false);
+      expect(save).toHaveBeenCalledTimes(1);
+
+      // Warning should not fire for auto
+      expect(onWarning).not.toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'mac-alt-mnemonic' }),
+      );
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUserAgent,
+        configurable: true,
+      });
+    }
+  });
+
+  it('warns when alt is explicitly configured on Apple platforms and honors suppression', () => {
+    const originalUserAgent = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      configurable: true,
+    });
+    const onWarning = vi.fn();
+    try {
+      const screen = render(
+        <KeyboundProvider mnemonicModifier="alt" onWarning={onWarning}>
+          <Mnemonic text="&Save">
+            <button>Save</button>
+          </Mnemonic>
+        </KeyboundProvider>,
+      );
+      expect(onWarning).toHaveBeenCalledWith(expect.objectContaining({ code: 'mac-alt-mnemonic' }));
+      screen.unmount();
+      onWarning.mockClear();
+
+      render(
+        <KeyboundProvider mnemonicModifier="alt" warnings={false} onWarning={onWarning}>
+          <Mnemonic text="&Save">
+            <button>Save</button>
+          </Mnemonic>
+        </KeyboundProvider>,
+      );
+      expect(onWarning).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', {
+        value: originalUserAgent,
+        configurable: true,
+      });
+    }
+  });
 });

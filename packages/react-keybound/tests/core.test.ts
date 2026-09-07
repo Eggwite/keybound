@@ -5,6 +5,7 @@ import {
   normalizeKey,
   parseMnemonic,
   parseShortcut,
+  resolveMnemonicModifier,
 } from '../src/core';
 
 describe('parseMnemonic', () => {
@@ -135,5 +136,27 @@ describe('shortcuts', () => {
         true,
       ),
     ).toBe(false);
+  });
+});
+
+describe('resolveMnemonicModifier', () => {
+  it('resolves auto to mod on Apple and alt on other platforms', () => {
+    expect(resolveMnemonicModifier('auto', true)).toBe('mod');
+    expect(resolveMnemonicModifier('auto', false)).toBe('alt');
+    expect(resolveMnemonicModifier(undefined, true)).toBe('mod');
+    expect(resolveMnemonicModifier(undefined, false)).toBe('alt');
+  });
+
+  it('preserves explicit string modifiers', () => {
+    expect(resolveMnemonicModifier('ctrl', true)).toBe('ctrl');
+    expect(resolveMnemonicModifier('ctrl', false)).toBe('ctrl');
+    expect(resolveMnemonicModifier('alt', true)).toBe('alt');
+  });
+
+  it('supports platform mapping objects', () => {
+    expect(resolveMnemonicModifier({ mac: 'ctrl', windows: 'alt' }, true)).toBe('ctrl');
+    expect(resolveMnemonicModifier({ mac: 'ctrl', windows: 'alt' }, false)).toBe('alt');
+    expect(resolveMnemonicModifier({ windows: 'ctrl' }, false)).toBe('ctrl');
+    expect(resolveMnemonicModifier({ default: 'shift' }, false)).toBe('shift');
   });
 });

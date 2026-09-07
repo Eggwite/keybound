@@ -8,6 +8,7 @@ import {
   Mnemonic,
   useMnemonic,
   useHotkey,
+  useKeyboundContext,
 } from 'react-keybound';
 import { Crosshair, Search, Terminal, X, ArrowDown } from 'lucide-react';
 import type {} from 'react-keybound/jsx';
@@ -34,6 +35,12 @@ function StudioCues({
   triggerEvent: (id: string, key: string, type: 'mnemonic' | 'hotkey', target: string) => void;
   searchInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const { apple } = useKeyboundContext();
+  const saveKey = apple ? '⌘S' : 'Alt+S';
+  const exportKey = apple ? '⌘X' : 'Alt+X';
+  const reloadKey = apple ? '⌘L' : 'Alt+L';
+  const findKey = apple ? '⌘K' : 'Ctrl+K';
+
   const executeSave = React.useCallback(() => {
     searchInputRef.current?.blur();
   }, [searchInputRef]);
@@ -48,31 +55,31 @@ function StudioCues({
 
   const saveMnemonic = useMnemonic('&Save changes', {
     allowInInput: true,
-    action: (_element, event) => {
+    action: (_element, _event) => {
       executeSave();
-      triggerEvent('save', event.metaKey ? '⌘S' : 'Alt+S', 'mnemonic', 'button[Save]');
+      triggerEvent('save', saveKey, 'mnemonic', 'button[Save]');
     },
   });
 
   const exportMnemonic = useMnemonic('E&xport document', {
     allowInInput: true,
-    action: (_element, event) => {
+    action: (_element, _event) => {
       executeExport();
-      triggerEvent('export', event.metaKey ? '⌘X' : 'Alt+X', 'mnemonic', 'button[Export]');
+      triggerEvent('export', exportKey, 'mnemonic', 'button[Export]');
     },
   });
 
   const reloadMnemonic = useMnemonic('Re&load state', {
     allowInInput: true,
-    action: (_element, event) => {
+    action: (_element, _event) => {
       executeReload();
-      triggerEvent('reload', event.metaKey ? '⌘L' : 'Alt+L', 'mnemonic', 'button[Reload]');
+      triggerEvent('reload', reloadKey, 'mnemonic', 'button[Reload]');
     },
   });
 
-  useHotkey('mod+k', (event) => {
+  useHotkey('mod+k', () => {
     searchInputRef.current?.focus();
-    triggerEvent('find', event.metaKey ? '⌘K' : 'Ctrl+K', 'hotkey', 'input[search]');
+    triggerEvent('find', findKey, 'hotkey', 'input[search]');
   });
 
   return (
@@ -90,7 +97,7 @@ function StudioCues({
           </span>
           <span className="truncate">{saveMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">Alt+S</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{saveKey}</span>
       </button>
 
       <button
@@ -106,7 +113,7 @@ function StudioCues({
           </span>
           <span className="truncate">{exportMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">Alt+X</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{exportKey}</span>
       </button>
 
       <button
@@ -122,7 +129,7 @@ function StudioCues({
           </span>
           <span className="truncate">{reloadMnemonic.label}</span>
         </span>
-        <span className="font-mono text-[10px] text-muted flex-none">Alt+L</span>
+        <span className="font-mono text-[10px] text-muted flex-none">{reloadKey}</span>
       </button>
 
       <div
@@ -140,9 +147,9 @@ function StudioCues({
             if (e.key === 'Escape') e.currentTarget.blur();
           }}
         />
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted pointer-events-none">
-          ⌘K
-        </span>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+          <kbd className="font-mono text-[10px] text-muted">{findKey}</kbd>
+        </div>
       </div>
     </div>
   );

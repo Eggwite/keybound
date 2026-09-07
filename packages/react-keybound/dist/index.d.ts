@@ -9,8 +9,15 @@ type Shortcut = {
     mod: boolean;
     source: string;
 };
+type PlatformModifierMap = {
+    mac?: string;
+    windows?: string;
+    linux?: string;
+    default?: string;
+};
+type MnemonicModifierSetting = 'auto' | string | PlatformModifierMap;
 
-type WarningCode = 'invalid-shortcut' | 'collision' | 'missing-target' | 'invalid-mnemonic';
+type WarningCode = 'invalid-shortcut' | 'collision' | 'missing-target' | 'invalid-mnemonic' | 'mac-alt-mnemonic';
 type KeyboundWarning = {
     code: WarningCode;
     message: string;
@@ -91,6 +98,8 @@ declare class KeyboundRegistry {
     private matches;
     private eligible;
     private warn;
+    warnGlobal(code: WarningCode, message: string): void;
+    private emitWarning;
     private updateOptions;
     private emit;
 }
@@ -98,7 +107,7 @@ declare class KeyboundRegistry {
 type KeyboundProviderProps = {
     children: React.ReactNode;
     enabled?: boolean;
-    mnemonicModifier?: string;
+    mnemonicModifier?: MnemonicModifierSetting;
     reveal?: 'always' | 'modifier' | 'never';
     warnings?: WarningSetting;
     onWarning?: (warning: KeyboundWarning) => void;
@@ -175,4 +184,4 @@ declare function KeyboundHelp({ className, style, renderItem, }: KeyboundHelpPro
 /** Opens a Radix Select trigger through the primitive's documented keyboard path. */
 declare function radixSelectAction(element: HTMLElement, _event: KeyboardEvent): void;
 
-export { type Action, Hotkey, type HotkeyOptions, type HotkeyProps, type KeyboundCommand, KeyboundHelp, type KeyboundHelpProps, KeyboundOverlay, type KeyboundOverlayProps, KeyboundProvider, type KeyboundProviderProps, KeyboundScope, type KeyboundScopeProps, type KeyboundWarning, Mnemonic, type MnemonicOptions, type MnemonicProps, type WarningCode, composeRefs, radixSelectAction, useHotkey, useKeyboundCommands, useKeyboundContext, useMnemonic };
+export { type Action, Hotkey, type HotkeyOptions, type HotkeyProps, type KeyboundCommand, KeyboundHelp, type KeyboundHelpProps, KeyboundOverlay, type KeyboundOverlayProps, KeyboundProvider, type KeyboundProviderProps, KeyboundScope, type KeyboundScopeProps, type KeyboundWarning, Mnemonic, type MnemonicModifierSetting, type MnemonicOptions, type MnemonicProps, type PlatformModifierMap, type WarningCode, composeRefs, radixSelectAction, useHotkey, useKeyboundCommands, useKeyboundContext, useMnemonic };

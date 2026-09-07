@@ -88,13 +88,31 @@ export default function BehaviorPage() {
           ) or legacy key codes.
         </p>
         <p className="text-[13px] text-muted leading-relaxed">
-          On macOS, the Option key acts as a glyph modifier/dead-key composer (e.g. Option+S
-          produces &ldquo;ß&rdquo;, Option+E produces a dead key). For applications targeting Mac or
-          cross-platform users, configure <code>mnemonicModifier=&quot;mod&quot;</code> on{' '}
-          <code>&lt;KeyboundProvider&gt;</code> (resolves to ⌘ on Apple, Ctrl elsewhere) so
-          mnemonics remain portable semantic characters. Note that setting{' '}
-          <code>mnemonicModifier=&quot;mod&quot;</code> preserves semantic character matching on
-          Mac, but does not make browser-reserved shortcuts automatically safe to capture.
+          On macOS and iPadOS, the Option key acts as an alternative glyph modifier and dead-key
+          composer (e.g. Option+S produces &ldquo;ß&rdquo;, Option+X produces &ldquo;≈&rdquo;, and
+          Option+E produces a dead key). Because Keybound adheres strictly to semantic matching,
+          these glyphs do not match ASCII letters under an <code>alt</code> modifier.
+        </p>
+        <p className="text-[13px] text-muted leading-relaxed">
+          To provide seamless cross-platform ergonomics, <code>&lt;KeyboundProvider&gt;</code>{' '}
+          defaults to <code>mnemonicModifier=&quot;auto&quot;</code>. This automatically resolves to{' '}
+          <code>Alt</code> on Windows and Linux, and <code>mod</code> (⌘ Command) on macOS and
+          iPadOS.
+        </p>
+        <p className="text-[13px] text-muted leading-relaxed">
+          You can also provide a granular platform map if you wish to use <code>Control</code> (⌃)
+          on Mac to avoid browser-reserved Command shortcuts:
+        </p>
+        <div className="font-mono text-[12px] bg-sand/30 border border-stone rounded p-2.5 text-ink">
+          <code>
+            mnemonicModifier=&#123;&#123; mac: &apos;ctrl&apos;, windows: &apos;alt&apos;, linux:
+            &apos;alt&apos; &#125;&#125;
+          </code>
+        </div>
+        <p className="text-[13px] text-muted leading-relaxed">
+          Explicitly configuring <code>mnemonicModifier=&quot;alt&quot;</code> on an Apple platform
+          will emit a development warning (<code>mac-alt-mnemonic</code>), which can be suppressed
+          via the <code>warnings</code> prop.
         </p>
       </section>
 

@@ -8,7 +8,40 @@ A target is skipped when it is disconnected, hidden through itself or an ancesto
 
 Normal bindings do not fire while typing in inputs, textareas, selects, contenteditable regions, or `role="textbox"`. Set `allowInInput: true` for deliberate editor shortcuts. Composition, AltGr, unknown/dead keys, unmatched extra modifiers, repeats, and already-prevented events are ignored by default. `repeat: true` opts one binding into repeats.
 
-Keybound matches shortcuts semantically against `KeyboardEvent.key`, strictly following the user's active keyboard layout and remapping. It never uses physical key positions (`event.code`) or legacy key codes (`keyCode`). On macOS, the Option key acts as a glyph modifier/dead-key composer (e.g. `Option+S` produces alternative glyphs like `ß`, `Option+E` produces `Dead`). For applications targeting macOS or cross-platform mnemonics, set `mnemonicModifier="mod"` on `<KeyboundProvider>` (`⌘` on Apple, `Ctrl` elsewhere) so mnemonics remain accessible semantic characters. Note that setting `mnemonicModifier="mod"` preserves semantic character matching on Mac, but does not make browser-reserved shortcuts automatically safe to capture.
+## Semantic Matching & Platform-Aware Mnemonic Modifiers
+
+Keybound matches shortcuts semantically against `KeyboardEvent.key`, strictly following the user's active keyboard layout and remapping. It never uses physical key positions (`event.code`) or legacy key codes (`keyCode`).
+
+### macOS & iPadOS Keyboard Quirks
+
+On Apple keyboards, the Option key (`⌥`) acts as an alternative glyph and diacritic composer rather than a standard accelerator (e.g. `Option+S` produces `ß`, `Option+X` produces `≈`, and `Option+E` produces `Dead`). Because Keybound requires semantic character equality, these glyphs do not match ASCII letters under an `alt` modifier.
+
+### Zero-Config `mnemonicModifier="auto"`
+
+To provide desktop-grade keyboard intent across operating systems with zero developer friction, `<KeyboundProvider>` defaults `mnemonicModifier="auto"`:
+
+- **Windows & Linux**: Resolves to `'alt'` (`Alt+S`), honoring traditional desktop accelerator conventions.
+- **macOS & iPadOS**: Resolves to `'mod'` (`⌘S`), matching standard thumb ergonomics without producing alternate glyphs.
+
+### Platform Mapping & Browser Shortcuts
+
+While `mod` (`⌘`) provides a native Mac experience, browsers reserve select shortcuts (e.g. `⌘W`, `⌘N`, `⌘T`) that web apps cannot preventDefault. If you require complete isolation from browser shortcuts on Mac, configure an explicit platform map using `Control` (`⌃`), which is 100% collision-free:
+
+```tsx
+<KeyboundProvider
+  mnemonicModifier={{
+    mac: 'ctrl', // ⌃S on macOS/iPadOS
+    windows: 'alt', // Alt+S on Windows
+    linux: 'alt', // Alt+S on Linux
+  }}
+>
+  {children}
+</KeyboundProvider>
+```
+
+### Advisory Warning: `mac-alt-mnemonic`
+
+If a developer explicitly sets `mnemonicModifier="alt"` on an Apple platform, Keybound emits an advisory development warning (`[keybound:mac-alt-mnemonic]`). This warning is de-duplicated and suppressible globally or via `warnings={{ 'mac-alt-mnemonic': false }}`.
 
 Keybound calls `preventDefault()` only after finding a winner. It never stops propagation.
 

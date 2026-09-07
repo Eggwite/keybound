@@ -54,7 +54,7 @@ import type {} from 'react-keybound/jsx';
 export function App() {
   return (
     <KeyboundProvider>
-      {/* Mnemonics: 'Alt+S' underlines S and triggers save */}
+      {/* Mnemonics: 'Alt+S' (Win/Linux) or '⌘S' (macOS) underlines S and triggers save */}
       <button onClick={save}>&Save</button>
 
       {/* Hotkeys: '⌘K' (macOS) / 'Ctrl+K' (Win/Linux) focuses search */}
@@ -88,7 +88,8 @@ function SearchInput() {
 
 ### Key API Concepts
 
-- **`&` Mnemonics**: `<button>&Save</button>` underlines **S** and activates on `Alt+S`. Use `&&` for literal `&`.
+- **`&` Mnemonics**: `<button>&Save</button>` underlines **S** and activates via `mnemonicModifier` (`auto` defaults to `Alt+S` on Windows/Linux and `⌘S` on macOS/iPadOS). Use `&&` for literal `&`.
+- **`mnemonicModifier` Prop**: Accepts `'auto'`, a specific modifier string (`'mod'`, `'ctrl'`, `'alt'`), or a platform map (`{ mac: 'ctrl', windows: 'alt' }`).
 - **`hotkey` Attribute**: Explicit shortcut keys (`mod+k`, `ctrl+s`, `shift+?`). `mod` resolves to Meta on macOS and Ctrl elsewhere.
 - **`<KeyboundScope>`**: Manages active/inactive subtrees and modal shortcut blocking (`modal={true}`).
 - **`<KeyboundOverlay />`**: Visual hint badge overlay for available shortcuts.

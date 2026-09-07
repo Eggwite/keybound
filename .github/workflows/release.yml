@@ -64,4 +64,4 @@ jobs:
         with:
           name: package
           path: artifacts
-      - run: npm publish artifacts/*.tgz --access public --provenance
+      - run: npm publish ./artifacts/*.tgz --access public --provenance

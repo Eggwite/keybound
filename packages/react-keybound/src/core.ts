@@ -195,9 +195,9 @@ export function formatShortcut(shortcut: Shortcut | string, apple = isApplePlatf
   const item = typeof shortcut === 'string' ? parseShortcut(shortcut) : shortcut;
   if (!item) return typeof shortcut === 'string' ? shortcut : '';
   const parts: string[] = [];
-  if (item.ctrl || (item.mod && !apple)) parts.push('Ctrl');
-  if (item.alt) parts.push('Alt');
-  if (item.shift) parts.push('Shift');
+  if (item.ctrl || (item.mod && !apple)) parts.push(apple ? '⌃' : 'Ctrl');
+  if (item.alt) parts.push(apple ? '⌥' : 'Alt');
+  if (item.shift) parts.push(apple ? '⇧' : 'Shift');
   if (item.meta || (item.mod && apple)) parts.push(apple ? '⌘' : 'Meta');
   parts.push(item.key.length === 1 ? item.key.toUpperCase() : displayKey(item.key));
   return parts.join(apple ? '' : '+');

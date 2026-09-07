@@ -134,9 +134,9 @@ function formatShortcut(shortcut, apple = isApplePlatform()) {
   const item = typeof shortcut === "string" ? parseShortcut(shortcut) : shortcut;
   if (!item) return typeof shortcut === "string" ? shortcut : "";
   const parts = [];
-  if (item.ctrl || item.mod && !apple) parts.push("Ctrl");
-  if (item.alt) parts.push("Alt");
-  if (item.shift) parts.push("Shift");
+  if (item.ctrl || item.mod && !apple) parts.push(apple ? "\u2303" : "Ctrl");
+  if (item.alt) parts.push(apple ? "\u2325" : "Alt");
+  if (item.shift) parts.push(apple ? "\u21E7" : "Shift");
   if (item.meta || item.mod && apple) parts.push(apple ? "\u2318" : "Meta");
   parts.push(item.key.length === 1 ? item.key.toUpperCase() : displayKey(item.key));
   return parts.join(apple ? "" : "+");

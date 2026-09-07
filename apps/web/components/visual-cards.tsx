@@ -1,7 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { KeyboundProvider, Mnemonic, Hotkey, KeyboundScope } from 'react-keybound';
+import {
+  KeyboundProvider,
+  Mnemonic,
+  Hotkey,
+  KeyboundScope,
+  useKeyboundContext,
+} from 'react-keybound';
+import { formatShortcut } from 'react-keybound/core';
 import {
   Check,
   Copy,
@@ -76,6 +83,11 @@ function useTransitionPresence(isOpen: boolean, duration = 220) {
 }
 
 function CardsInner() {
+  const { apple, mnemonicModifier } = useKeyboundContext();
+  const exportKey = formatShortcut(`${mnemonicModifier}+x`, apple);
+  const autosaveShortcut = apple ? 'mod+shift+a' : 'alt+a';
+  const autosaveKey = formatShortcut(autosaveShortcut, apple);
+
   // Card 1: Realistic File Export states
   const [exportStatus, setExportStatus] = React.useState<'idle' | 'exporting' | 'completed'>(
     'idle',
@@ -231,7 +243,7 @@ function CardsInner() {
               ) : (
                 <div className="flex items-center justify-between w-full text-muted">
                   <span>Click or press</span>
-                  <kbd className="kbd-badge text-[9.5px]">Alt+X</kbd>
+                  <kbd className="kbd-badge text-[9.5px]">{exportKey}</kbd>
                 </div>
               )}
             </div>
@@ -243,7 +255,7 @@ function CardsInner() {
             </div>
             <p className="text-[12px] text-muted leading-relaxed min-h-[44px] flex items-center justify-center gap-1 flex-wrap">
               <span>Press</span>
-              <kbd className="kbd-badge text-[10px]">Alt+X</kbd>
+              <kbd className="kbd-badge text-[10px]">{exportKey}</kbd>
               <span>to trigger without breaking natural word flow.</span>
             </p>
           </div>
@@ -276,13 +288,13 @@ function CardsInner() {
                 <span className="text-[12px] font-medium text-charcoal">Autosave revisions</span>
                 <span className="text-[10px] text-muted">Automatic snapshot on change</span>
               </div>
-              <Hotkey keys="alt+a" label="Autosave toggle">
+              <Hotkey keys={autosaveShortcut} label="Autosave toggle" allowInInput>
                 <button
                   role="switch"
                   aria-checked={toggleState}
                   onClick={handleToggleSync}
                   className="tactile-switch transition-transform active:scale-95 cursor-pointer"
-                  title="Toggle autosave with Alt+A"
+                  title={`Toggle autosave with ${autosaveKey}`}
                 >
                   <span className="knob" />
                 </button>
@@ -302,7 +314,7 @@ function CardsInner() {
               ) : (
                 <div className="flex items-center justify-between w-full text-muted">
                   <span>Offline mode (local only)</span>
-                  <kbd className="kbd-badge text-[9.5px]">Alt+A</kbd>
+                  <kbd className="kbd-badge text-[9.5px]">{autosaveKey}</kbd>
                 </div>
               )}
             </div>
@@ -310,11 +322,11 @@ function CardsInner() {
 
           <div className="flex flex-col flex-1 justify-between gap-2.5 text-center pt-1">
             <div className="flex justify-center h-7 items-center">
-              <CopyableSnippet code='hotkey="alt+a"' />
+              <CopyableSnippet code={`hotkey="${autosaveShortcut}"`} />
             </div>
             <p className="text-[12px] text-muted leading-relaxed min-h-[44px] flex items-center justify-center gap-1 flex-wrap">
               <span>Press</span>
-              <kbd className="kbd-badge text-[10px]">Alt+A</kbd>
+              <kbd className="kbd-badge text-[10px]">{autosaveKey}</kbd>
               <span>to toggle custom switches or native inputs.</span>
             </p>
           </div>
@@ -393,9 +405,10 @@ function CardsInner() {
 
                     <div className="py-1">
                       <p className="text-[10px] text-muted leading-tight">
-                        Background shortcuts (<kbd className="kbd-badge text-[8.5px]">Alt+X</kbd>,{' '}
-                        <kbd className="kbd-badge text-[8.5px]">Alt+A</kbd>) are blocked by the
-                        modal scope.
+                        Background shortcuts (
+                        <kbd className="kbd-badge text-[8.5px]">{exportKey}</kbd>,{' '}
+                        <kbd className="kbd-badge text-[8.5px]">{autosaveKey}</kbd>) are blocked by
+                        the modal scope.
                       </p>
                     </div>
 

@@ -67,17 +67,17 @@ const formHotkeysCode = `// 1. Focus search input on Command/Ctrl+K
 const manualWrappersCode = `// 1. Import zero-compiler manual wrappers from react-keybound
 import { Mnemonic, Hotkey } from "react-keybound";
 
-// 2. Wrap button with Mnemonic component to bind Alt+S
-<Mnemonic text="&Save">
+// 2. Wrap button with Mnemonic component to bind Alt+R
+<Mnemonic text="&Reload">
 
-  <button onClick={handleSave}>Save</button>
+  <button onClick={handleReload}>Reload</button>
 
 </Mnemonic>
 
-// 3. Wrap input with Hotkey component to bind Command/Ctrl+K
-<Hotkey keys="mod+k" label="Search">
+// 3. Wrap button with Hotkey component to bind Command/Ctrl+B
+<Hotkey keys="mod+b" label="Build project">
 
-  <input placeholder="Search..." aria-label="Search" />
+  <button onClick={handleBuild}>Build</button>
 
 </Hotkey>`;
 
@@ -122,14 +122,14 @@ import { useHotkey } from "react-keybound";
 // 2. Headless application shortcut without a visual DOM target
 export function DocumentEditor() {
 
-  // Register global shortcut with automatic preventDefault
-  useHotkey("mod+s", (e) => {
+  // Register headless shortcut with automatic preventDefault
+  useHotkey("mod+j", (e) => {
 
     e.preventDefault();
 
-    saveDocument();
+    openJumpPalette();
 
-  }, { label: "Save document" });
+  }, { label: "Quick Jump" });
 
   // Escape key handler scoped to the active component
   useHotkey("escape", () => {
@@ -358,14 +358,17 @@ function ExamplesContent() {
   const { apple, mnemonicModifier } = useKeyboundContext();
   const saveKey = formatShortcut(`${mnemonicModifier}+s`, apple);
   const exportKey = formatShortcut(`${mnemonicModifier}+x`, apple);
-  const resetKey = formatShortcut(`${mnemonicModifier}+e`, apple);
+  const closeKey = formatShortcut(`${mnemonicModifier}+c`, apple);
   const findKey = formatShortcut('mod+k', apple);
   const autosaveShortcut = apple ? 'mod+shift+a' : 'alt+a';
   const autosaveKey = formatShortcut(autosaveShortcut, apple);
+  const reloadKey = formatShortcut(`${mnemonicModifier}+r`, apple);
   const buildShortcut = apple ? 'mod+shift+b' : 'mod+b';
   const buildKey = formatShortcut(buildShortcut, apple);
-  const evaluateKey = formatShortcut(`${mnemonicModifier}+e`, apple);
   const uploadKey = formatShortcut(`${mnemonicModifier}+u`, apple);
+  const jumpShortcut = 'mod+j';
+  const jumpKey = formatShortcut(jumpShortcut, apple);
+  const validateKey = formatShortcut(`${mnemonicModifier}+v`, apple);
 
   // Demo states
   const [feedback, setFeedback] = React.useState<{ [key: string]: boolean }>({});
@@ -402,13 +405,13 @@ function ExamplesContent() {
 
   // Section 5: Headless shortcut
   useHotkey(
-    'mod+s',
+    jumpShortcut,
     (e) => {
       e.preventDefault();
       setHeadlessCounter((c) => c + 1);
-      fire('headless-save', `Headless Save (${saveKey})`);
+      fire('headless-jump', `Headless Quick Jump (${jumpKey})`);
     },
-    { label: 'Headless Save', allowInInput: true },
+    { label: 'Headless Quick Jump', allowInInput: true },
   );
 
   return (
@@ -442,11 +445,11 @@ function ExamplesContent() {
             </Mnemonic>
 
             <Mnemonic
-              text="Save && Res&et"
-              action={() => fire('reset', `Saved & Reset with ${resetKey}`)}
+              text="Save && &Close"
+              action={() => fire('close', `Saved & Closed with ${closeKey}`)}
             >
               <button className="btn btn--quiet btn--sm flex items-center gap-1.5">
-                Save && Reset
+                Save && Close
               </button>
             </Mnemonic>
           </div>
@@ -461,12 +464,12 @@ function ExamplesContent() {
               message={`${exportKey} dispatched!`}
             />
             <FeedbackBadge
-              status={feedback.reset ? 'fired' : 'idle'}
-              message={`${resetKey} dispatched (&& decoded)!`}
+              status={feedback.close ? 'fired' : 'idle'}
+              message={`${closeKey} dispatched (&& decoded)!`}
             />
-            {!feedback.save && !feedback.export && !feedback.reset && (
+            {!feedback.save && !feedback.export && !feedback.close && (
               <span className="text-[11px] text-muted font-mono">
-                Press {saveKey}, {exportKey}, or {resetKey} to test live activation.
+                Press {saveKey}, {exportKey}, or {closeKey} to test live activation.
               </span>
             )}
           </div>
@@ -567,16 +570,16 @@ function ExamplesContent() {
         <div className="p-4 rounded-card bg-white border border-border shadow-lift flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <Mnemonic
-              text="Res&et"
-              action={() => fire('reset-manual', `Reset triggered with ${resetKey}`)}
+              text="&Reload"
+              action={() => fire('reload-manual', `Reload triggered with ${reloadKey}`)}
             >
               <button className="btn btn--quiet btn--sm flex items-center gap-1.5">
-                {buttonStates['reset-manual'] === 'loading' ? (
+                {buttonStates['reload-manual'] === 'loading' ? (
                   <Loader2 className="size-3.5 animate-spin text-ember" />
-                ) : buttonStates['reset-manual'] === 'success' ? (
+                ) : buttonStates['reload-manual'] === 'success' ? (
                   <Check className="size-3.5 text-grass" />
                 ) : null}
-                <span>Reset</span>
+                <span>Reload</span>
               </button>
             </Mnemonic>
 
@@ -597,8 +600,8 @@ function ExamplesContent() {
 
           <div className="min-h-[22px]">
             <FeedbackBadge
-              status={feedback['reset-manual'] ? 'fired' : 'idle'}
-              message={`Manual <Mnemonic> fired ${resetKey}!`}
+              status={feedback['reload-manual'] ? 'fired' : 'idle'}
+              message={`Manual <Mnemonic> fired ${reloadKey}!`}
             />
             <FeedbackBadge
               status={feedback.build ? 'fired' : 'idle'}
@@ -637,20 +640,20 @@ function ExamplesContent() {
         <div className="p-4 rounded-card bg-white border border-border shadow-lift flex items-center justify-between flex-wrap gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-[13px] text-ink">Headless {saveKey}</span>
+              <span className="font-medium text-[13px] text-ink">Headless {jumpKey}</span>
               <span className="font-mono text-[11px] text-muted bg-stone px-2 py-0.5 rounded">
                 Dispatches: {headlessCounter}
               </span>
             </div>
             <p className="text-[12px] text-muted">
-              Press {saveKey} anywhere on this page to trigger the headless handler.
+              Press {jumpKey} anywhere on this page to trigger the headless handler.
             </p>
           </div>
 
           <div className="min-h-[22px]">
             <FeedbackBadge
-              status={feedback['headless-save'] ? 'fired' : 'idle'}
-              message={`Headless ${saveKey} handled!`}
+              status={feedback['headless-jump'] ? 'fired' : 'idle'}
+              message={`Headless ${jumpKey} handled!`}
             />
           </div>
         </div>
@@ -794,15 +797,15 @@ function ExamplesContent() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Mnemonic
-                text="&Evaluate item"
-                action={() => fire('evaluate', `Evaluate activated with ${evaluateKey}!`)}
+                text="&Validate item"
+                action={() => fire('validate', `Validate activated with ${validateKey}!`)}
               >
                 <button
                   disabled={isDisabled}
                   style={{ display: isHidden ? 'none' : 'inline-flex' }}
                   className={`btn btn--sm ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'btn--quiet'}`}
                 >
-                  Evaluate item
+                  Validate item
                 </button>
               </Mnemonic>
 
@@ -815,8 +818,8 @@ function ExamplesContent() {
 
             <div className="min-h-[22px]">
               <FeedbackBadge
-                status={feedback.evaluate ? 'fired' : 'idle'}
-                message={`${evaluateKey} dispatched to Evaluate!`}
+                status={feedback.validate ? 'fired' : 'idle'}
+                message={`${validateKey} dispatched to Validate!`}
               />
             </div>
           </div>

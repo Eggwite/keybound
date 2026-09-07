@@ -38,7 +38,7 @@ const jsonLd = {
   description:
     'Compile-time keyboard annotations for React. Inline &Save mnemonics, mod+k hotkeys, nested modal scopes, and live hint overlays with an under 8KB runtime.',
   url: 'https://keybound.eggwite.moe',
-  softwareVersion: '0.1.0',
+  softwareVersion: '0.1.1',
   author: {
     '@type': 'Person',
     name: 'Eggwite',

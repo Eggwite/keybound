@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-09-07)
 
+- Examples page ergonomics: ensure each interactive example section uses unique, collision-free shortcuts so every demo responds independently.
 - Cross-platform mnemonic modifier ergonomics: default `mnemonicModifier` to `'auto'` (resolves to `'mod'` / Command on macOS/iPadOS and `'alt'` on Windows/Linux).
 - Add `PlatformModifierMap` support to configure per-platform modifiers (e.g. `{ mac: 'ctrl', windows: 'alt' }`).
 - Add `mac-alt-mnemonic` development warning when `alt` is configured on Apple platforms to flag glyph/dead-key conflicts with semantic key matching.
